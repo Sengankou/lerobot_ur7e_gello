@@ -32,8 +32,16 @@ from .robotiq_gripper import RobotiqGripper
 
 logger = logging.getLogger(__name__)
 
-#: Joint keys, in the order UR reports them (base -> wrist_3).
-JOINT_KEYS = [f"joint_{i}" for i in range(6)]
+#: Motor names, in the order UR reports them (base -> wrist_3).
+JOINT_NAMES = [f"joint_{i}" for i in range(6)]
+
+#: Feature keys exposed to LeRobot. Since 0.6 the framework's rollout path
+#: selects motor features by the ``.pos`` suffix
+#: (``lerobot/rollout/context.py``: ``k.endswith(".pos")``), so a robot that
+#: names them anything else still records and teleoperates fine but produces an
+#: empty ``observation.state`` at rollout time. Follow the convention.
+JOINT_KEYS = [f"{name}.pos" for name in JOINT_NAMES]
+GRIPPER_KEY = "gripper.pos"
 
 
 class UR5E(Robot):
@@ -65,7 +73,7 @@ class UR5E(Robot):
         # The gripper entry is present even when the gripper is disabled, so a
         # dataset recorded on URSim can be replayed/trained against on the real
         # cell without a shape mismatch.
-        return {**{k: float for k in JOINT_KEYS}, "gripper": float}
+        return {**{k: float for k in JOINT_KEYS}, GRIPPER_KEY: float}
 
     @property
     def _cameras_ft(self) -> dict[str, tuple]:
@@ -192,10 +200,10 @@ class UR5E(Robot):
 
         if self.with_gripper:
             assert self.gripper is not None
-            obs_dict["gripper"] = self.gripper.get_current_position() / 255.0  # -> [0, 1]
+            obs_dict[GRIPPER_KEY] = self.gripper.get_current_position() / 255.0  # -> [0, 1]
         else:
             # Placeholder so the observation vector keeps its 7th element.
-            obs_dict["gripper"] = 0.0
+            obs_dict[GRIPPER_KEY] = 0.0
 
         for cam_key, cam in self.cameras.items():
             obs_dict[cam_key] = cam.async_read()
@@ -230,12 +238,12 @@ class UR5E(Robot):
 
         if self.with_gripper:
             assert self.gripper is not None
-            gripper_cmd = float(np.clip(action.get("gripper", 0.0) * 255.0, 0, 255))
+            gripper_cmd = float(np.clip(action.get(GRIPPER_KEY, 0.0) * 255.0, 0, 255))
             self.gripper.move(int(gripper_cmd), self.gripper_speed, self.gripper_force)
-            sent["gripper"] = gripper_cmd / 255.0
+            sent[GRIPPER_KEY] = gripper_cmd / 255.0
         else:
             # Echo back the placeholder so callers (and the dataset writer) see
             # the same 7 keys they would on the real cell.
-            sent["gripper"] = float(action.get("gripper", 0.0))
+            sent[GRIPPER_KEY] = float(action.get(GRIPPER_KEY, 0.0))
 
         return sent

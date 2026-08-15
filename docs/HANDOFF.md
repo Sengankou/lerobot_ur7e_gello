@@ -1,6 +1,7 @@
 # HANDOFF: UR7e × LeRobot × GELLO 一気通貫セットアップ（RTX 5080 機）
 
 - 作成: 2026-08-03 / 更新: 2026-08-16（作業リポジトリ確定に伴い §0.5 を追加、§4・§5・§8 を改訂）/ Claude (claude.ai, Fable 5)
+- **2026-08-16 追記: RTX 5080 機での Phase A〜D をすべて実施し、Phase C の 1〜5 が green になった。実測値・新たに踏んだ罠・確定した設計は §12 に集約した。§12 と本文が食い違う場合は §12 を正とする。**
 - 宛先: RTX 5080 Ubuntu PC 上の Claude Code（このプロジェクトのコンテキストを一切持っていない前提で書く）
 - 依頼者: Koya（PolarisAI）
 - 置き場所: 本ファイルは作業リポジトリの `docs/HANDOFF.md` として git 管理する（実測結果を反映したら更新してコミットする）
@@ -112,7 +113,7 @@ UR5e + Robotiq + GELLO + LeRobot + π0 という、本プロジェクトと同�
 
 - 会社の Spark 環境は conda env で `lerobot==0.6.0` を運用中（SO-101/OpenArm）。Koya 個人は最新機能志向で editable clone も併用（`-e ~/lerobot[...]`）
 - **推奨**: この PC でも **editable clone + コミット固定**。`git clone https://github.com/huggingface/lerobot ~/lerobot && cd ~/lerobot && git checkout <commit>` とし、**採用 SHA を下の記録欄に追記**。Spark 移行時に同じコミットへ checkout する。dataset フォーマット（v3.0）と Robot API の互換性を機体間で揃えるのが目的
-- **採用 lerobot コミット（記録欄）**: `未記入 — Phase B 開始時に Claude Code が記入`
+- **採用 lerobot コミット（記録欄）**: `v0.6.0 = 30da8e687a6dfc617fcd94afc367ac7071c376ce`（2026-07-06）✅実測 2026-08-16。会社 Spark 環境の `lerobot==0.6.0` と揃えるためタグに固定した。`register_third_party_plugins()` の存在も確認済み（対象 prefix は `lerobot_robot_` / `lerobot_camera_` / `lerobot_teleoperator_` / `lerobot_policy_` / `lerobot_env_` の 5 種に増えている）
 - 自動登録機構（上記 6）は 0.5.1 で確認済み。採用コミットでの存在を最初に確認すること（`grep -r register_third_party_plugins`）
 - F-Fer が本体を fork にピンしている理由は動画バッチエンコーディングのバグ 💭推論。採用コミットで `lerobot-record` の動画書き出しが壊れたらここを疑う
 
@@ -285,3 +286,87 @@ EOF
 - ベース実装: https://github.com/F-Fer/lerobot_ur5e_gello / 補助: https://github.com/scy-v/lerobot_ur5e_isoteleop
 - gello_software（較正値の出所）: https://github.com/wuphilipp/gello_software
 - 社内 Notion Wiki: 「GELLO Setup手順」（較正値・U2D2 パス）/「Intel Realsense セットアップ手順」（Spark 側カメラ）/「URSim (PolyScope X) セットアップ手順」（本セッションで作成、Windows 版手順とトラブルシューティング）
+
+---
+
+## 12. 実測結果と確定事項（2026-08-16 / RTX 5080 機 / Claude Code）
+
+**この節が最新の正**。§1〜§11 は着手前の想定であり、食い違う箇所は本節を採る。
+
+### 12.1 Definition of Done の達成状況
+
+| DoD | 結果 |
+| --- | --- |
+| ① Phase C 1〜5 が URSim 相手に green | ✅ 全段 green（12.3） |
+| ② URSim→実機の切替が設定ファイル書き換えのみ | ✅ `config/site.yaml` 1 ファイル。コード側に IP・デバイスパス・カメラ番号のベタ書きは残っていない |
+| ③ 環境定義・較正・freeze・MIGRATION.md がコミット済み | ✅ `envs/ur7e.yaml` / `calibration/*.json` / `docs/freeze-x86.txt` / `docs/MIGRATION.md` |
+
+### 12.2 確定した環境
+
+| 項目 | 値 |
+| --- | --- |
+| lerobot | `v0.6.0` = `30da8e687a6dfc617fcd94afc367ac7071c376ce`（editable, `~/lerobot`） |
+| python / conda env | 3.12.13 / `ur7e` |
+| torch | `2.10.0+cu130`、CUDA 13.0、**sm_120 ネイティブカーネル同梱**（PTX JIT なし）✅ |
+| torchvision | `0.25.0+cu130` |
+| torchcodec | **`0.10.0` に明示ピン**（12.4-B） |
+| ffmpeg | 7.1.1（conda-forge） |
+| URSim | `universalrobots/ursim_polyscopex:10.12.1`, `ROBOT_TYPE=UR7e`, `192.168.56.101` |
+| External Control URCapX | `1.1.0`（**リリースタグに `v` は付かない**。§5 の URL は 404） |
+
+### 12.3 検証ラダーの結果（`scripts/verify_ladder.sh`）
+
+| 段 | 内容 | 結果 |
+| --- | --- | --- |
+| 0 | 環境・プラグイン自動登録 | ✅ `ur5e` / `gello` / `keyboard_joint` が登録される |
+| 1 | RTDE 双方向 + moveJ + servoJ | ✅ moveJ 誤差 0.00°、servoJ 125 Hz 実測 125.0 Hz / p95 8.00 ms |
+| 2 | teleoperate | ✅ 125 fps→**124.1 Hz**（work 0.030 ms/tick、余裕 7.97 ms）／30 fps→**29.9 Hz**（work 22.5 ms、カメラ律速） |
+| 3 | record → finalize → 読み戻し | ✅ v3.0 / 6 ep / 1440 frames / state・action とも 7 次元 / 動画デコード可 |
+| 4 | train | ✅ ACT 300 steps（loss 13.7→3.2、22 step/s）、SmolVLA 200 steps（loss 2.3→0.13、14 step/s、100M params） |
+| 5 | rollout | ✅ sync+ACT / RTC+SmolVLA / `lerobot-replay` / async（policy_server + robot_client, chunk `[1,50,7]` を 6.8 ms）|
+
+**送信レートの結論**: `send_action`（servoJ）は 0.019 ms、`get_observation`（RTDE のみ）は 0.009 ms。**制御経路は 125 Hz に対して 2 桁の余裕がある**。30 fps でのボトルネックは UVC カメラ（22.5 ms）であって RTDE ではない。URSim の RTDE 配信周期は実測 2.000 ms（500.0 Hz）。
+
+**未達 1 件**: `--inference.type=rtc` + **ACT** は upstream 側の制約で動かない（`ACTPolicy.predict_action_chunk()` が `inference_delay` を受け取らない）。RTC は flow-matching 系ポリシー向けであり、SmolVLA では正常動作する。実機で ACT を使う場合は sync エンジンを使う。
+
+### 12.4 新たに踏んだ罠（§9 に追加）
+
+**A. External Control URCapX 1.1.0 は「再生時に URScript を取りに来ない」** ✅実測
+URCap 自身の設定画面に書いてある: *"The URScript is not fetched when playing the program. Use the 'update program' button in the program node."* つまり手順は
+①PC 側でリスナを起動 → ②Program ノードを**開いた状態で** "Update program" を押す（ノードが valid になる）→ ③▶ 再生、の順。
+さらに **プログラムを編集すると（Loop Program のトグルですら）キャッシュが無効化され、ノードが黄色に戻る**。「Program is not finished. Complete the yellow program-nodes」はこれ。①〜③をやり直す。
+
+**B. torchcodec は torch と ABI で結合しており、エラーメッセージがそれを言わない** ✅実測
+lerobot の制約は `torchcodec<0.12` と広いので、resolver は 0.11.1 を引く。しかし 0.11 は torch≥2.11 向けで、torch 2.10 では `undefined symbol: torch_dtype_float4_e2m1fn_x2` で落ちる。**torch 2.10 ↔ torchcodec 0.10.0** が正しい対。
+加えて **conda の ffmpeg は `$CONDA_PREFIX/lib` にあり loader path に載っていない**ため `libavutil.so.59: cannot open shared object file` も同時に出る。`activate.d` フックで `LD_LIBRARY_PATH` を通す（`scripts/setup_env.sh` が設置する）。
+**症状の特徴**: 収録は成功し、**読み戻しで初めて壊れる**（エンコードは PyAV / ffmpeg バイナリ経由、デコードは torchcodec 経由で別経路）。
+
+**C. lerobot 0.6 はモータ特徴名が `.pos` で終わることを要求する** ✅実測
+`lerobot/rollout/context.py` が `k.endswith(".pos")` でモータ特徴を選別する。上流由来の `joint_0` 命名のままだと **teleoperate と record は通るのに rollout だけ `KeyError: 'observation.state'`** で落ちる。本リポジトリは `joint_0.pos` … `gripper.pos` に統一した。
+
+**D. lerobot 0.6 は ZMQ カメラを内蔵した** ✅実測
+`lerobot.cameras.zmq` が `"zmq"` を登録するため、同名で登録する `lerobot_camera_zmq` プラグインを入れると **`register_third_party_plugins()` が両方を import した時点で全 `lerobot-*` コマンドが落ちる**。本リポジトリでは `"zmq_legacy"` に改名し、既定ではインストールしない。
+
+**E. `--dataset.single_task` にコロンを入れてはいけない** ✅実測
+draccus が `a: b` を dict として解釈し、task 文字列が `{'a': 'b'}` になる。言語条件付けに効くので実機収録では特に注意。
+
+**F. GELLO の非同期読み取りスレッドは自前ではペーシングしない** ✅実測（本リポジトリ側のバグ）
+`Gello._read_loop` は sleep 無しの `while` ループで、実機では serial 往復が律速になって成立している。モック実装で即返すと **GIL を占有して robot 側の呼び出しに ~5 ms/tick 乗り、125 Hz が 86 Hz に落ちた**。モックは実機同等の ~3 ms を意図的に消費する。実機の U2D2 が遅い個体に当たった場合も同じ形で teleop 全体が遅くなる、という一般則として憶えておく。
+
+**G. UVC カメラの `exposure_dynamic_framerate`** ✅実測
+暗所だと自動的にフレームレートを落とす。既定のままだと 640x480 が 15 fps になり `get_observation` が 65 ms になった。`v4l2-ctl --set-ctrl=auto_exposure=1 --set-ctrl=exposure_dynamic_framerate=0` で 30.1 Hz に回復。
+
+**H. Main Program の Loop Program を有効にすると無人運用ができる** ✅実測
+LeRobot セッション終了時の `stopScript()` でプログラムは停止する（runtime state 1=STOPPED）。Loop を有効にすると自動で再起動し、次の ur_rtde クライアントが UI 操作なしで接続できる。**実機では「人が ▶ を押すまで動かない」ことの価値と天秤にかけること。**
+
+### 12.5 設計上の確定
+
+- **設定の単一の源**: `config/site.yaml` を `ur7e_site` パッケージが読み、各 Config の `default_factory` から参照する。したがって `lerobot-teleoperate --robot.type=ur5e` のように **IP を CLI に書かなくても動く**。CLI フラグは常に上書きとして機能する。読み込みは**絶対に例外を投げない**（import 時に評価されるため、失敗すると `--help` すら死ぬ）。
+- **グリッパは無効でも 7 次元を維持**: `gripper.pos` は `use_gripper: false` のとき 0.0 固定で存在する。URSim で録ったデータと実機データの schema が一致する。
+- **モック GELLO は「下の層だけ」差し替える**: `MockDynamixelBus` は `DynamixelMotorsBus` のドロップイン。較正計算・7 次元 action 組み立て・非同期読み取り・EMA 平滑はすべて実機と同じコードが走る。モックの home counts は社内較正値 `[4,5,3,2,2,3]×1024` に合わせてあるので、`_process_action` を通すと `calibration_position` にぴったり一致する。
+- **`keyboard_joint` は RTDE receive で現在姿勢を seed する**: teleoperator が起動時に勝手な姿勢を出力してアームが飛ぶのを防ぐ。実機のブリングアップでもそのまま使える。
+- **較正の妥当性チェックを実装**: 取り直した offsets が `k×1024` から ±200 counts 以上ずれたら警告する（§4 のチェックをコード化）。
+
+### 12.6 スコープ外のまま残ったもの
+
+グリッパ実経路（PolyScope X の ToolComm Forwarder + socat + Modbus は未実装。`use_gripper: false` が実機でも当面正）／カメラ映像の意味（URSim に視覚なし）／実機の制御周期ジッタ・実時間性／安全設定・TCP・ペイロード。詳細は `docs/MIGRATION.md`。

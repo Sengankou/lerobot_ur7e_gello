@@ -78,7 +78,11 @@ class Gello(Teleoperator):
 
     @property
     def action_features(self) -> dict[str, type]:
-        return {motor: float for motor in self.bus.motors}
+        # ".pos" suffix is a LeRobot >= 0.6 convention: the rollout path picks
+        # motor features out of the observation/action dicts by that suffix
+        # (lerobot/rollout/context.py). Without it, teleop and record still
+        # work but a policy rollout gets an empty observation.state.
+        return {f"{motor}.pos": float for motor in self.bus.motors}
 
     @property
     def feedback_features(self) -> dict[str, type]:
@@ -209,15 +213,17 @@ class Gello(Teleoperator):
             print(f"'{motor}' motor id set to {self.bus.motors[motor].id}")
 
     def _process_action(self, raw_action: dict[str, int]) -> dict[str, float]:
-        # Normalize joint positions to [-pi, pi] and gripper position to [0, 1]
+        # Raw motor counts -> joint angles in rad, gripper -> [0, 1].
+        # Keys carry the ".pos" suffix to match `action_features`; the raw
+        # dict coming off the bus is keyed by bare motor name.
         result = {}
         for idx, motor in enumerate(self.JOINT_NAMES):
             offset = self.calibration.joint_offsets[motor]
             sign = self.config.joint_signs[idx]
             ref_pos_rad = self.config.calibration_position[idx]
             angle_rad = sign * (raw_action[motor] - offset) * self.RAD_PER_COUNT + ref_pos_rad
-            result[motor] = angle_rad
-        result["gripper"] = (raw_action["gripper"] - self.calibration.gripper_open_position) / (self.calibration.gripper_closed_position - self.calibration.gripper_open_position)
+            result[f"{motor}.pos"] = angle_rad
+        result["gripper.pos"] = (raw_action["gripper"] - self.calibration.gripper_open_position) / (self.calibration.gripper_closed_position - self.calibration.gripper_open_position)
         return result
 
     def _read_loop(self) -> None:

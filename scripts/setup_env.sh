@@ -24,7 +24,8 @@ ENV_NAME="${ENV_NAME:-ur7e}"
 #   smolvla          -> transformers/num2words for the SmolVLA policy
 #   dynamixel        -> dynamixel-sdk, needed by the GELLO teleoperator
 #   hardware         -> pynput etc., needed by the keyboard teleoperators
-LEROBOT_EXTRAS="${LEROBOT_EXTRAS:-dataset,training,smolvla,dynamixel,hardware}"
+#   async            -> grpcio/protobuf for policy_server + robot_client
+LEROBOT_EXTRAS="${LEROBOT_EXTRAS:-dataset,training,smolvla,dynamixel,hardware,async}"
 
 echo "== repo        : $REPO_DIR"
 echo "== lerobot dir : $LEROBOT_DIR (ref $LEROBOT_REF)"
@@ -49,10 +50,34 @@ else
 fi
 conda activate "$ENV_NAME"
 
+# --------------------------------------------------- ffmpeg on the loader path
+# torchcodec dlopens libavutil/libavcodec by SONAME. Those ship inside this
+# env's lib/, which is NOT on the default loader path, so without this hook the
+# decoder fails at import with "libavutil.so.NN: cannot open shared object
+# file" -- and only when *reading* a dataset back, because encoding goes
+# through PyAV / the ffmpeg binary instead. Installed as an activate.d hook so
+# it follows the env rather than the shell.
+mkdir -p "$CONDA_PREFIX/etc/conda/activate.d" "$CONDA_PREFIX/etc/conda/deactivate.d"
+cat > "$CONDA_PREFIX/etc/conda/activate.d/zz-ffmpeg-ldpath.sh" <<'HOOK'
+export UR7E_SAVED_LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}"
+HOOK
+cat > "$CONDA_PREFIX/etc/conda/deactivate.d/zz-ffmpeg-ldpath.sh" <<'HOOK'
+export LD_LIBRARY_PATH="${UR7E_SAVED_LD_LIBRARY_PATH:-}"
+unset UR7E_SAVED_LD_LIBRARY_PATH
+HOOK
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}"
+
 # ---------------------------------------------------------------- pip layer
 # NOTE: always call `python -m pip` -- a bare `pip` under miniforge can resolve
 # to the base environment's pip and silently install into base (known trap).
 python -m pip install -e "${LEROBOT_DIR}[${LEROBOT_EXTRAS}]"
+
+# torchcodec is ABI-locked to torch and lerobot's range (<0.12) is wider than
+# what any single torch works with. torch 2.10 -> torchcodec 0.10; 0.11 needs
+# torch >= 2.11 and fails with "undefined symbol: torch_dtype_..." on 2.10.
+# Pin explicitly rather than letting the resolver pick the newest allowed.
+python -m pip install "torchcodec==${TORCHCODEC_VERSION:-0.10.0}"
 
 # ur7e_site first: the plugin configs import it at module load time to read
 # their defaults out of config/site.yaml.

@@ -42,7 +42,10 @@ from .config_keyboard_joint import KeyboardJointConfig
 
 logger = logging.getLogger(__name__)
 
-JOINT_KEYS = [f"joint_{i}" for i in range(6)]
+# ".pos" suffix follows the LeRobot >= 0.6 convention -- see the note in
+# lerobot_robot_ur5e.ur5e. Must match the robot's action_features exactly.
+JOINT_KEYS = [f"joint_{i}.pos" for i in range(6)]
+GRIPPER_KEY = "gripper.pos"
 
 #: key -> (joint index, direction)
 JOG_KEYS: dict[str, tuple[int, float]] = {
@@ -93,7 +96,7 @@ class KeyboardJoint(Teleoperator):
     def action_features(self) -> dict[str, type]:
         # Identical to the GELLO leader's, on purpose: either device can drive
         # the same robot and produce the same dataset schema.
-        return {**{k: float for k in JOINT_KEYS}, "gripper": float}
+        return {**{k: float for k in JOINT_KEYS}, GRIPPER_KEY: float}
 
     @property
     def feedback_features(self) -> dict[str, type]:
@@ -257,7 +260,7 @@ class KeyboardJoint(Teleoperator):
         with self._lock:
             assert self._target is not None
             action = {k: float(v) for k, v in zip(JOINT_KEYS, self._target, strict=True)}
-            action["gripper"] = float(self._gripper)
+            action[GRIPPER_KEY] = float(self._gripper)
         return action
 
     def send_feedback(self, feedback: dict[str, float]) -> None:

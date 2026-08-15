@@ -39,6 +39,9 @@ data/
 *.safetensors
 checkpoints/
 wandb/
+# lerobot's async robot_client writes a timestamped log into ./logs at runtime
+logs/
+*.log
 
 # --- Secrets ----------------------------------------------------------------
 # HF / W&B tokens and any local site override that may contain a private IP.

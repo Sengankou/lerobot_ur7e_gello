@@ -1,0 +1,150 @@
+# pip freeze of the environment in which the full Phase C ladder went green.
+# machine : x86_64 / Linux 7.0.0-28-generic
+# gpu     : NVIDIA GeForce RTX 5080, 580.173.02
+# python  : Python 3.12.13
+# lerobot : v0.6.0 @ 30da8e687a6dfc617fcd94afc367ac7071c376ce
+# ffmpeg  : ffmpeg version 7.1.1 Copyright (c) 2000-2025 the FFmpeg developers
+# date    : 2026-08-16T01:49:35+09:00
+#
+# Regenerate with: pip freeze > docs/freeze-x86.txt
+# aarch64 deltas are in docs/MIGRATION.md -- do NOT pip install -r this file on the Spark.
+
+accelerate==1.14.0
+aiohappyeyeballs==2.7.1
+aiohttp==3.14.3
+aiosignal==1.4.0
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.14.2
+asttokens @ file:///home/conda/feedstock_root/build_artifacts/asttokens_1783975656336/work
+attrs==26.1.0
+av==15.1.0
+certifi==2026.7.22
+charset-normalizer==3.5.1
+click==8.4.2
+cloudpickle==3.1.2
+cmake==4.1.3
+cuda-bindings==13.0.3
+cuda-pathfinder==1.6.0
+datasets==4.8.5
+deepdiff==8.6.2
+defusedxml==0.7.1
+dill==0.4.1
+docopt==0.6.2
+draccus==0.10.0
+dynamixel-sdk==3.8.4
+einops==0.8.2
+et_xmlfile==2.0.0
+evdev==1.9.3
+executing @ file:///home/conda/feedstock_root/build_artifacts/executing_1756729339227/work
+Farama-Notifications==0.0.6
+filelock==3.32.3
+frozenlist==1.8.0
+fsspec==2026.2.0
+gitdb==4.0.12
+GitPython==3.1.59
+grpcio==1.83.0
+gymnasium==1.3.0
+h11==0.16.0
+hf-xet==1.6.0
+httpcore==1.0.9
+httpx==0.28.1
+huggingface_hub==1.27.0
+idna==3.18
+ipython @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_ipython_1785754203/work
+ipython_pygments_lexers @ file:///home/conda/feedstock_root/build_artifacts/ipython_pygments_lexers_1737123620466/work
+jedi @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_jedi_1782251948/work
+Jinja2==3.1.6
+jsonlines==4.0.0
+lerobot @ file:///home/sengankou/lerobot
+-e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@3238170e1751cfe441bae07fdc3a9b60eaeb55ae#egg=lerobot_robot_ur5e&subdirectory=lerobot_robot_ur5e
+-e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@3238170e1751cfe441bae07fdc3a9b60eaeb55ae#egg=lerobot_teleoperator_gello&subdirectory=lerobot_teleoperator_gello
+-e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@3238170e1751cfe441bae07fdc3a9b60eaeb55ae#egg=lerobot_teleoperator_keyboard_joint&subdirectory=lerobot_teleoperator_keyboard_joint
+markdown-it-py==4.2.0
+MarkupSafe==3.0.3
+matplotlib-inline @ file:///home/conda/feedstock_root/build_artifacts/matplotlib-inline_1778264321245/work
+mdurl==0.1.2
+mergedeep==1.3.4
+mpmath==1.3.0
+multidict==6.7.1
+multiprocess==0.70.19
+mypy_extensions==1.1.0
+networkx==3.6.1
+num2words==0.5.14
+numpy==2.2.6
+nvidia-cublas==13.1.0.3
+nvidia-cuda-cupti==13.0.85
+nvidia-cuda-nvrtc==13.0.88
+nvidia-cuda-runtime==13.0.96
+nvidia-cudnn-cu13==9.15.1.9
+nvidia-cufft==12.0.0.61
+nvidia-cufile==1.15.1.6
+nvidia-curand==10.4.0.35
+nvidia-cusolver==12.0.4.66
+nvidia-cusparse==12.6.3.3
+nvidia-cusparselt-cu13==0.8.0
+nvidia-nccl-cu13==2.28.9
+nvidia-nvjitlink==13.0.88
+nvidia-nvshmem-cu13==3.4.5
+nvidia-nvtx==13.0.85
+opencv-python-headless==4.13.0.92
+openpyxl==3.1.5
+orderly-set==5.5.0
+packaging==25.0
+pandas==2.3.3
+parso @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_parso_1777722955/work
+pexpect @ file:///home/conda/feedstock_root/build_artifacts/pexpect_1733301927746/work
+pillow==12.3.0
+platformdirs==4.11.3
+prompt_toolkit @ file:///home/conda/feedstock_root/build_artifacts/prompt-toolkit_1785160527032/work
+propcache==0.5.2
+protobuf==7.35.1
+psutil @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_psutil_1769678155/work
+ptyprocess @ file:///home/conda/feedstock_root/build_artifacts/ptyprocess_1733302279685/work/dist/ptyprocess-0.7.0-py2.py3-none-any.whl#sha256=92c32ff62b5fd8cf325bec5ab90d7be3d2a8ca8c8a3813ff487a8d2002630d1f
+pure_eval @ file:///home/conda/feedstock_root/build_artifacts/pure_eval_1733569405015/work
+pyarrow==25.0.1
+pydantic==2.13.4
+pydantic_core==2.46.4
+Pygments @ file:///home/conda/feedstock_root/build_artifacts/pygments_1774796700044/work
+pynput==1.8.2
+pyserial==3.5
+python-dateutil==2.9.0.post0
+python-xlib==0.33
+pytz==2026.3.post1
+PyYAML==6.0.3
+pyyaml-include==1.4.1
+regex==2026.7.19
+requests==2.34.2
+rich==15.0.0
+safetensors==0.8.0
+sentry-sdk==2.68.0
+setuptools==80.10.2
+shellingham==1.5.4
+six==1.17.0
+smmap==5.0.3
+stack_data @ file:///home/conda/feedstock_root/build_artifacts/stack_data_1733569443808/work
+sympy==1.14.0
+termcolor==3.3.0
+tokenizers==0.22.2
+toml==0.10.2
+torch==2.10.0+cu130
+torchcodec==0.10.0
+torchvision==0.25.0+cu130
+tqdm==4.70.0
+traitlets @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_traitlets_1785761789/work
+transformers==5.5.4
+triton==3.6.0
+typer==0.27.1
+typing-inspect==0.9.0
+typing-inspection==0.4.4
+typing_extensions @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_typing_extensions_1783002732/work
+tzdata==2026.3
+-e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@3238170e1751cfe441bae07fdc3a9b60eaeb55ae#egg=ur7e_site&subdirectory=ur7e_site
+ur_rtde==1.6.5
+urllib3==2.7.0
+wandb==0.27.2
+wcwidth @ file:///home/conda/feedstock_root/build_artifacts/wcwidth_1782771721065/work
+wheel==0.48.0
+xxhash==4.0.0
+yarl==1.24.5
+youtube-transcript-api==1.2.4
