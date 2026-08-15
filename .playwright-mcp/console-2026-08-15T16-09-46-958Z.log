@@ -1,0 +1,11 @@
+[   40690ms] [LOG] backendUrl http://192.168.56.101/universal-robots/external-control/external-control-backend/rest-api/50002/192.168.56.1 @ http://192.168.56.101/universal-robots/external-control/external-control-frontend/external-control-program.worker.js:0
+[   40700ms] [LOG] response Response @ http://192.168.56.101/universal-robots/external-control/external-control-frontend/external-control-program.worker.js:0
+[   75895ms] [LOG] backendUrl http://192.168.56.101/universal-robots/external-control/external-control-backend/rest-api/50002/192.168.56.1 @ http://192.168.56.101/universal-robots/external-control/external-control-frontend/external-control-program.worker.js:0
+[   75999ms] [LOG] response Response @ http://192.168.56.101/universal-robots/external-control/external-control-frontend/external-control-program.worker.js:0
+[   76001ms] [LOG] backendUrl http://192.168.56.101/universal-robots/external-control/external-control-backend/rest-api/50002/192.168.56.1 @ http://192.168.56.101/universal-robots/external-control/external-control-frontend/external-control-program.worker.js:0
+[   76003ms] [LOG] response Response @ http://192.168.56.101/universal-robots/external-control/external-control-frontend/external-control-program.worker.js:0
+[   76003ms] [LOG] generatePreambleScriptCode @ http://192.168.56.101/universal-robots/external-control/external-control-frontend/external-control-program.worker.js:0
+[   76004ms] [LOG] backendUrl http://192.168.56.101/universal-robots/external-control/external-control-backend/rest-api/50002/192.168.56.1 @ http://192.168.56.101/universal-robots/external-control/external-control-frontend/external-control-program.worker.js:0
+[   76006ms] [LOG] response Response @ http://192.168.56.101/universal-robots/external-control/external-control-frontend/external-control-program.worker.js:0
+[  240346ms] [LOG] backendUrl http://192.168.56.101/universal-robots/external-control/external-control-backend/rest-api/50002/192.168.56.1 @ http://192.168.56.101/universal-robots/external-control/external-control-frontend/external-control-program.worker.js:0
+[  240349ms] [LOG] response Response @ http://192.168.56.101/universal-robots/external-control/external-control-frontend/external-control-program.worker.js:0

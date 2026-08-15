@@ -6,6 +6,7 @@ Reads joint positions from Dynamixel servos and applies calibration offsets.
 
 import logging
 import json
+import sys
 import time
 import numpy as np
 from threading import Thread, Event, Lock
@@ -18,6 +19,7 @@ from lerobot.motors.dynamixel import (
 from lerobot.teleoperators import Teleoperator
 from lerobot.utils.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
 from .config_gello import GelloConfig
+from .mock_bus import MockDynamixelBus
 from pathlib import Path
 logger = logging.getLogger(__name__)
 
@@ -42,18 +44,32 @@ class Gello(Teleoperator):
         super().__init__(config)
         self.config = config
         self.calibration = None
-        self.bus = DynamixelMotorsBus(
-            port=self.config.port,
-            motors={
-                "joint_0": Motor(1, "xl330-m288", MotorNormMode.RANGE_M100_100),
-                "joint_1": Motor(2, "xl330-m288", MotorNormMode.RANGE_M100_100),
-                "joint_2": Motor(3, "xl330-m288", MotorNormMode.RANGE_M100_100),
-                "joint_3": Motor(4, "xl330-m288", MotorNormMode.RANGE_M100_100),
-                "joint_4": Motor(5, "xl330-m288", MotorNormMode.RANGE_M100_100),
-                "joint_5": Motor(6, "xl330-m288", MotorNormMode.RANGE_M100_100),
-                "gripper": Motor(7, "xl330-m077", MotorNormMode.RANGE_0_100),
-            }
-        )
+        motors = {
+            "joint_0": Motor(1, "xl330-m288", MotorNormMode.RANGE_M100_100),
+            "joint_1": Motor(2, "xl330-m288", MotorNormMode.RANGE_M100_100),
+            "joint_2": Motor(3, "xl330-m288", MotorNormMode.RANGE_M100_100),
+            "joint_3": Motor(4, "xl330-m288", MotorNormMode.RANGE_M100_100),
+            "joint_4": Motor(5, "xl330-m288", MotorNormMode.RANGE_M100_100),
+            "joint_5": Motor(6, "xl330-m288", MotorNormMode.RANGE_M100_100),
+            "gripper": Motor(7, "xl330-m077", MotorNormMode.RANGE_0_100),
+        }
+        # Only the lowest layer is swapped when running without hardware; every
+        # line below this point is the same code that drives the real leader.
+        if self.config.mock:
+            logger.warning(
+                "Gello running with the SIMULATED bus (teleop.gello.mock=true). "
+                "No Dynamixel hardware is being read."
+            )
+            self.bus = MockDynamixelBus(
+                port=self.config.port,
+                motors=motors,
+                amplitude_rad=self.config.mock_amplitude_rad,
+                period_s=self.config.mock_period_s,
+                rad_per_count=self.RAD_PER_COUNT,
+                joint_signs=self.config.joint_signs,
+            )
+        else:
+            self.bus = DynamixelMotorsBus(port=self.config.port, motors=motors)
 
         self.thread: Thread | None = None
         self.stop_event: Event | None = None
@@ -62,7 +78,11 @@ class Gello(Teleoperator):
 
     @property
     def action_features(self) -> dict[str, type]:
-        return {motor: float for motor in self.bus.motors}
+        # ".pos" suffix is a LeRobot >= 0.6 convention: the rollout path picks
+        # motor features out of the observation/action dicts by that suffix
+        # (lerobot/rollout/context.py). Without it, teleop and record still
+        # work but a policy rollout gets an empty observation.state.
+        return {f"{motor}.pos": float for motor in self.bus.motors}
 
     @property
     def feedback_features(self) -> dict[str, type]:
@@ -101,9 +121,20 @@ class Gello(Teleoperator):
     def is_calibrated(self) -> bool:
         return self.calibration is not None
 
+    @property
+    def _interactive(self) -> bool:
+        """Whether we may block on ``input()``.
+
+        False with the simulated bus (there is nothing to physically move) and
+        false when stdin is not a terminal, so unattended runs -- CI, the
+        verification ladder, `lerobot-record` under nohup -- capture
+        calibration instead of hanging forever on a prompt.
+        """
+        return not self.config.mock and sys.stdin is not None and sys.stdin.isatty()
+
     def calibrate(self) -> None:
         self.bus.disable_torque()
-        if self.calibration:
+        if self.calibration and self._interactive:
             # Calibration exists exists, ask user whether to use it or run new calibration
             user_input = input(
                 "Press ENTER to use existing calibration, or type 'c' and press ENTER to run new calibration: "
@@ -111,20 +142,51 @@ class Gello(Teleoperator):
             if user_input.strip().lower() != "c":
                 logger.info("Using existing calibration")
                 return
+        elif self.calibration:
+            logger.info("Using existing calibration (non-interactive session)")
+            return
+
         logger.info(f"\nRunning calibration of {self}")
 
-        input(f"Move {self} to the home position and press ENTER....")
+        if self._interactive:
+            input(f"Move {self} to the home position and press ENTER....")
+        else:
+            logger.info("Non-interactive session: capturing the current pose as the home position.")
+
         start_joints = self.bus.sync_read("Present_Position", normalize=False)
         calibration = GelloCalibration(
             joint_offsets={motor: start_joints[motor] for motor in self.JOINT_NAMES},
             gripper_open_position=start_joints["gripper"],
             gripper_closed_position=start_joints["gripper"] - self.config.gripper_travel_counts,
         )
+        self._warn_on_implausible_offsets(calibration)
         self.calibration = calibration
         # Save calibration to file
+        self.calibration_fpath.parent.mkdir(parents=True, exist_ok=True)
         with open(self.calibration_fpath, "w") as f:
-            json.dump(calibration.__dict__, f)
+            json.dump(calibration.__dict__, f, indent=2)
         logger.info(f"Calibration saved to {self.calibration_fpath}")
+
+    def _warn_on_implausible_offsets(self, calibration: "GelloCalibration") -> None:
+        """Sanity-check fresh offsets against the documented bench values.
+
+        The GELLO home jig puts every joint at a multiple of pi/2, and
+        ``RAD_PER_COUNT = 2*pi/4096`` means k*pi/2 rad == k*1024 counts. Offsets
+        that are not near a multiple of 1024 usually mean the arm was not in
+        the jig, or a servo was reassembled a full turn out.
+        """
+        for motor, offset in calibration.joint_offsets.items():
+            nearest_k = round(offset / 1024)
+            residual = offset - nearest_k * 1024
+            if abs(residual) > 200:  # ~17 deg of mounting error
+                logger.warning(
+                    "%s offset %d counts is %+d from the nearest k*1024 (k=%d). "
+                    "Expected the arm to be in the home jig; check the pose and re-run.",
+                    motor,
+                    offset,
+                    residual,
+                    nearest_k,
+                )
 
     def configure(self) -> None:
         self.bus.disable_torque()
@@ -151,15 +213,17 @@ class Gello(Teleoperator):
             print(f"'{motor}' motor id set to {self.bus.motors[motor].id}")
 
     def _process_action(self, raw_action: dict[str, int]) -> dict[str, float]:
-        # Normalize joint positions to [-pi, pi] and gripper position to [0, 1]
+        # Raw motor counts -> joint angles in rad, gripper -> [0, 1].
+        # Keys carry the ".pos" suffix to match `action_features`; the raw
+        # dict coming off the bus is keyed by bare motor name.
         result = {}
         for idx, motor in enumerate(self.JOINT_NAMES):
             offset = self.calibration.joint_offsets[motor]
             sign = self.config.joint_signs[idx]
             ref_pos_rad = self.config.calibration_position[idx]
             angle_rad = sign * (raw_action[motor] - offset) * self.RAD_PER_COUNT + ref_pos_rad
-            result[motor] = angle_rad
-        result["gripper"] = (raw_action["gripper"] - self.calibration.gripper_open_position) / (self.calibration.gripper_closed_position - self.calibration.gripper_open_position)
+            result[f"{motor}.pos"] = angle_rad
+        result["gripper.pos"] = (raw_action["gripper"] - self.calibration.gripper_open_position) / (self.calibration.gripper_closed_position - self.calibration.gripper_open_position)
         return result
 
     def _read_loop(self) -> None:
@@ -223,7 +287,9 @@ class Gello(Teleoperator):
             raw_action = self.bus.sync_read("Present_Position", normalize=False)
             result = self._process_action(raw_action)
             dt_bus_read_s = time.perf_counter() - start
-            print(f"bus.sync_read took {dt_bus_read_s} seconds")
+            # debug, not print: this runs once per control tick and would
+            # otherwise shred the teleop status display at 125 Hz.
+            logger.debug("bus.sync_read took %.4f s", dt_bus_read_s)
             return result
 
     def send_feedback(self, feedback: dict[str, float]) -> None:
@@ -232,7 +298,11 @@ class Gello(Teleoperator):
 
     def disconnect(self) -> None:
         if not self.is_connected:
-            raise DeviceNotConnectedError(f"{self} is not connected.")
+            # Callers put disconnect() in a `finally`, so raising here would
+            # replace the real failure (e.g. a connect error) with a confusing
+            # "not connected" traceback.
+            logger.warning("%s was not connected; nothing to disconnect.", self)
+            return
 
         if self.config.use_async:
             self._stop_read_thread()

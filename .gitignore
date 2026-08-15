@@ -25,3 +25,36 @@ venv/
 
 # Project-specific
 CLAUDE.md
+
+# --- Data & artefacts -------------------------------------------------------
+# Recorded datasets and video are large and are re-recorded on the real cell;
+# they must never enter git. (URSim data has zero learning value anyway.)
+datasets/
+outputs/
+data/
+*.mp4
+*.mkv
+*.arrow
+*.parquet
+*.safetensors
+checkpoints/
+wandb/
+# lerobot's async robot_client writes a timestamped log into ./logs at runtime
+logs/
+*.log
+
+# --- Secrets ----------------------------------------------------------------
+# HF / W&B tokens and any local site override that may contain a private IP.
+.env.*
+!.env.example
+*.token
+secrets.yaml
+config/site.local.yaml
+config/site.real.yaml
+
+# NOTE (deliberately NOT ignored, these are deliverables):
+#   calibration/*.json   GELLO calibration, committed so a fresh clone works
+#   envs/                conda environment definition
+#   config/site.yaml     active site config (URSim; contains only lab IPs)
+#   docs/                HANDOFF + MIGRATION
+#   scripts/             bring-up, smoke tests, verification ladder

@@ -1,0 +1,16 @@
+[project]
+name = "ur7e_site"
+version = "0.1.0"
+description = "Single source of truth for site-specific settings (robot IP, External Control host, cameras, device paths) shared by the UR7e LeRobot plugins."
+requires-python = ">=3.11"
+
+dependencies = [
+    "PyYAML>=6.0",
+]
+
+[tool.setuptools]
+packages = ["ur7e_site"]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
