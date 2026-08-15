@@ -63,9 +63,6 @@ class UR5E(Robot):
         self.gripper_speed = 255
         self.gripper_force = 10
 
-        #: Last commanded joint vector, used for the optional per-step clamp.
-        self._last_goal: list[float] | None = None
-
     # ------------------------------------------------------------------ specs
 
     @property

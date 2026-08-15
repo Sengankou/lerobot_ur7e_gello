@@ -29,7 +29,9 @@ start with and the arm would lurch towards it.
 from __future__ import annotations
 
 import logging
+import os
 import select
+import signal
 import sys
 import termios
 import tty
@@ -183,6 +185,13 @@ class KeyboardJoint(Teleoperator):
         """Fold one keystroke into the target vector. Backend-independent."""
         if key in QUIT_KEYS:
             self.should_quit = True
+            # LeRobot's teleop loop has no "the teleoperator asked to stop"
+            # hook, but it does catch KeyboardInterrupt and shut down cleanly.
+            # Raising SIGINT from this reader thread surfaces there as exactly
+            # that, so <esc> actually quits instead of only setting a flag
+            # nobody reads.
+            logger.info("%s: quit key pressed, stopping teleoperation.", self)
+            os.kill(os.getpid(), signal.SIGINT)
             return
 
         with self._lock:

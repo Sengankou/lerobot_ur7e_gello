@@ -118,8 +118,10 @@ class UR5EConfig(RobotConfig):
 
     cameras: dict[str, CameraConfig] = field(default_factory=_cameras_from_site)
 
-    #: Seconds to wait for RTDEControlInterface to establish before giving up.
-    connect_timeout_s: float = 10.0
+    # NOTE: no connect-timeout knob here on purpose. ur_rtde hard-codes 60 s
+    # while waiting for the External Control program to start and does not
+    # expose it on the constructor we use, so a field here would promise
+    # control we cannot deliver.
 
     def __post_init__(self) -> None:
         # `id` ends up in the calibration filename and in dataset metadata.
