@@ -58,3 +58,6 @@ config/site.real.yaml
 #   config/site.yaml     active site config (URSim; contains only lab IPs)
 #   docs/                HANDOFF + MIGRATION
 #   scripts/             bring-up, smoke tests, verification ladder
+
+# playwright-mcp scratch output
+.playwright-mcp/

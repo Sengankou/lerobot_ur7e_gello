@@ -1,8 +1,0 @@
-[    1612ms] [WARNING] WARNING: Multiple instances of Three.js being imported. @ http://192.168.56.101/universal-robots/web-frontend-app/modbus/main.js:105
-[    1657ms] [WARNING] WARNING: Multiple instances of Three.js being imported. @ http://192.168.56.101/universal-robots/web-frontend-app/sources-robot/main.js:100
-[    1787ms] [WARNING] WARNING: Multiple instances of Three.js being imported. @ http://192.168.56.101/universal-robots/web-frontend-app/web-smart-skills/main.js:98
-[    1839ms] [WARNING] WARNING: Multiple instances of Three.js being imported. @ http://192.168.56.101/universal-robots/web-frontend-app/operator-screens/main.js:111
-[    2025ms] [WARNING] WARNING: Multiple instances of Three.js being imported. @ http://192.168.56.101/universal-robots/web-frontend-app/web-program-nodes/main.js:103
-[    2147ms] [WARNING] WARNING: Multiple instances of Three.js being imported. @ http://192.168.56.101/universal-robots/web-frontend-app/web-application-nodes/main.js:96
-[    2197ms] [WARNING] WARNING: Multiple instances of Three.js being imported. @ http://192.168.56.101/universal-robots/web-frontend-app/system-info/main.js:92
-[    2287ms] [WARNING] WARNING: Multiple instances of Three.js being imported. @ http://192.168.56.101/universal-robots/web-frontend-app/sidebar-items/main.js:92
