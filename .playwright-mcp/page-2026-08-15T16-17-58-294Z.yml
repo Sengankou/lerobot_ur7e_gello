@@ -1,0 +1,178 @@
+- generic [ref=e8]:
+  - banner [ref=e10]:
+    - button "Program name Default program" [ref=e11] [cursor=pointer]:
+      - generic [ref=e15]:
+        - generic [ref=e16]: Program name
+        - generic [ref=e17]: Default program
+  - navigation [ref=e20]:
+    - button [ref=e23] [cursor=pointer]:
+      - figure [ref=e24]
+    - link [ref=e28] [cursor=pointer]:
+      - /url: "#/application"
+      - button "Application" [ref=e30]:
+        - figure [ref=e31]
+    - link [ref=e36] [cursor=pointer]:
+      - /url: "#/programming"
+      - button "Program" [ref=e38]:
+        - figure [ref=e39]
+    - link [ref=e44] [cursor=pointer]:
+      - /url: "#/move"
+      - button "3D" [ref=e46]:
+        - figure [ref=e47]
+    - link [ref=e52] [cursor=pointer]:
+      - /url: "#/operator"
+      - button "Operator" [ref=e54]:
+        - figure [ref=e55]
+  - generic [ref=e770]:
+    - generic [ref=e772]:
+      - generic [ref=e773]:
+        - generic [ref=e774]:
+          - button [disabled]:
+            - figure
+        - generic [ref=e775]:
+          - button [disabled]:
+            - figure
+        - generic [ref=e776]:
+          - button [disabled]:
+            - figure
+        - button [ref=e1208] [cursor=pointer]:
+          - figure [ref=e1209]
+      - generic [ref=e778]:
+        - button [ref=e1213] [cursor=pointer]:
+          - figure [ref=e1214]
+        - button [ref=e1218] [cursor=pointer]:
+          - figure [ref=e1219]
+        - generic [ref=e781]:
+          - button [disabled]:
+            - figure
+        - button [ref=e1223] [cursor=pointer]:
+          - figure [ref=e1224]
+      - button [ref=e1228] [cursor=pointer]:
+        - figure [ref=e1229]
+    - generic [ref=e788]:
+      - generic [ref=e791]:
+        - button "1" [ref=e792] [cursor=pointer]
+        - button [ref=e793] [cursor=pointer]
+        - 'button "Main Program: Looping: Enabled" [ref=e1332] [cursor=pointer]':
+          - figure [ref=e866]:
+            - img "ur" [ref=e867]
+          - generic [ref=e1333]: "Main Program:"
+          - generic [ref=e1334]:
+            - paragraph [ref=e1335]: "Looping:"
+            - paragraph [ref=e1336]: Enabled
+      - generic [ref=e1239]:
+        - button "2" [ref=e1362] [cursor=pointer]
+        - 'button "Update program from 192.168.56.1 : 50002 Update program" [ref=e1363] [cursor=pointer]':
+          - figure [ref=e1244]:
+            - img [ref=e1245]:
+              - generic [ref=e1246]:
+                - generic "C" [ref=e1247]
+                - generic "E" [ref=e1248]
+          - generic [ref=e1367]:
+            - generic [ref=e1368]:
+              - generic [ref=e1369]: Update program from
+              - generic [ref=e1371]: 192.168.56.1
+              - generic [ref=e1372]: ":"
+              - generic [ref=e1373]: "50002"
+            - button "Update program" [ref=e1377]:
+              - generic [active] [ref=e1378]: Update program
+      - button [ref=e1276] [cursor=pointer]:
+        - figure [ref=e1277]
+  - generic [ref=e86]:
+    - generic [ref=e87]:
+      - button "CC CC CC CC" [ref=e90] [cursor=pointer]:
+        - figure [ref=e91]
+        - generic [ref=e96]:
+          - generic [ref=e97]: CC
+          - generic [ref=e98]: CC
+          - generic [ref=e99]: CC
+          - generic [ref=e100]: CC
+      - button "Move" [ref=e102] [cursor=pointer]:
+        - figure [ref=e103]
+      - button "Program structure" [ref=e109] [cursor=pointer]:
+        - figure [ref=e110]
+      - button "Variables" [ref=e116] [cursor=pointer]:
+        - figure [ref=e117]
+    - generic [ref=e836]:
+      - button "Main Program" [ref=e837] [cursor=pointer]
+      - button "Before Start" [ref=e843] [cursor=pointer]
+      - generic [ref=e883]:
+        - generic [ref=e846]: Modules
+        - button [ref=e849] [cursor=pointer]:
+          - figure [ref=e850]
+      - generic [ref=e886]:
+        - button [expanded] [ref=e887]:
+          - button "Global Functions" [ref=e888] [cursor=pointer]
+        - region "Global Functions" [ref=e891]:
+          - button "Create New" [ref=e859] [cursor=pointer]
+  - generic [ref=e126]:
+    - generic [ref=e132]:
+      - button [ref=e134] [cursor=pointer]:
+        - figure [ref=e135]
+      - generic [ref=e139]:
+        - generic [ref=e140]: Robot State
+        - generic [ref=e141]: Active
+    - generic [ref=e145]:
+      - button [ref=e1321] [cursor=pointer]:
+        - figure [ref=e1322]
+      - generic [ref=e147]:
+        - button [disabled]:
+          - figure
+      - generic [ref=e148]:
+        - button [disabled]:
+          - figure
+    - generic [ref=e153]:
+      - button [ref=e517] [cursor=pointer]:
+        - figure [ref=e518]
+      - generic [ref=e155]:
+        - generic [ref=e156]: Speed
+        - generic [ref=e157]: 100 %
+      - generic [ref=e158]:
+        - button [disabled]:
+          - figure
+  - generic [ref=e161]:
+    - button "q" [ref=e164]
+    - button "w" [ref=e171]
+    - button "e" [ref=e178]
+    - button "r" [ref=e185]
+    - button "t" [ref=e192]
+    - button "y" [ref=e199]
+    - button "u" [ref=e206]
+    - button "i" [ref=e213]
+    - button "o" [ref=e220]
+    - button "p" [ref=e227]
+    - button [ref=e234]
+    - button "a" [ref=e245]
+    - button "s" [ref=e252]
+    - button "d" [ref=e259]
+    - button "f" [ref=e266]
+    - button "g" [ref=e273]
+    - button "h" [ref=e280]
+    - button "j" [ref=e287]
+    - button "k" [ref=e294]
+    - button "l" [ref=e301]
+    - button "\"" [ref=e308]
+    - button "Enter" [ref=e315]
+    - button "Shift" [ref=e322]
+    - button "z" [ref=e329]
+    - button "x" [ref=e336]
+    - button "c" [ref=e343]
+    - button "v" [ref=e350]
+    - button "b" [ref=e357]
+    - button "n" [ref=e364]
+    - button "m" [ref=e371]
+    - button "; ," [ref=e378]:
+      - generic [ref=e379]:
+        - generic [ref=e380]: ;
+        - generic [ref=e381]: ","
+    - 'button ": ." [ref=e386]':
+      - generic [ref=e387]:
+        - generic [ref=e388]: ":"
+        - generic [ref=e389]: .
+    - button "_" [ref=e394]
+    - button "Shift" [ref=e401]
+    - button "&123" [ref=e408]
+    - button [ref=e415]
+    - button [ref=e421]
+    - button [ref=e431]
+    - button [ref=e441]

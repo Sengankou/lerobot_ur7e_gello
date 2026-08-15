@@ -1,0 +1,31 @@
+# conda environment for the UR7e x LeRobot x GELLO stack.
+#
+#   conda env create -f envs/ur7e.yaml
+#
+# This file intentionally contains ONLY machine-independent dependencies.
+# The editable installs (lerobot core + the three plugin packages) are done by
+# scripts/setup_env.sh, because their paths differ per machine and hard-coding
+# an absolute path here would break the DGX Spark migration.
+#
+# Pin rationale (x86_64 / RTX 5080, sm_120):
+#   python 3.12   : lerobot v0.6.0 requires-python >= 3.12
+#   ffmpeg 7.1.1  : 8.x is not supported by the torchcodec build we use (internal finding)
+#   torch 2.10.0  : lerobot v0.6.0 allows >=2.7,<2.12; 2.10.0+cu130 wheel exists for cp312
+#   cu130         : ships sm_120 kernels natively -> no PTX JIT on RTX 5080
+#   torchvision   : 0.25.0 is the matching release for torch 2.10
+#   torchcodec    : left unpinned; lerobot[dataset] caps it <0.12 -> resolves to 0.9.1,
+#                   which is the build paired with torch 2.10
+#
+# aarch64 (DGX Spark) differences are documented in docs/MIGRATION.md.
+name: ur7e
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - ffmpeg=7.1.1
+  - ipython
+  - pip
+  - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cu130
+      - torch==2.10.0+cu130
+      - torchvision==0.25.0+cu130

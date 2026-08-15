@@ -2,12 +2,26 @@
 
 Defines ZMQCameraConfig with TCP address, topic, and image format settings
 for receiving frames from remote ZMQ camera streamers.
+
+SUPERSEDED
+----------
+LeRobot gained a first-party ZMQ camera in 0.6.0
+(``lerobot.cameras.zmq.ZMQCameraConfig``), which claims the ``"zmq"`` choice
+name. Two packages registering the same name makes draccus raise as soon as
+both are imported, and ``register_third_party_plugins()`` imports every
+installed ``lerobot_camera_*`` package automatically -- so simply having this
+plugin installed alongside lerobot >= 0.6.0 would break *every* ``lerobot-*``
+command.
+
+This package therefore registers under ``"zmq_legacy"`` and is not installed by
+``scripts/setup_env.sh``. Prefer the built-in. Kept in-tree only so datasets and
+configs inherited from the upstream project stay loadable.
 """
 
 from dataclasses import dataclass
 from lerobot.cameras.configs import CameraConfig, ColorMode, Cv2Rotation
 
-@CameraConfig.register_subclass("zmq")
+@CameraConfig.register_subclass("zmq_legacy")
 @dataclass
 class ZMQCameraConfig(CameraConfig):
     """Configuration class for ZMQ-based camera devices.

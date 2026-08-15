@@ -1,0 +1,77 @@
+# ============================================================================
+#  SITE CONFIG -- real UR7e template (DGX Spark / on-site cell)
+# ============================================================================
+#
+#  Usage on the robot machine:
+#      cp config/site.real.example.yaml config/site.yaml
+#      $EDITOR config/site.yaml        # fill in the four <FILL IN> values
+#
+#  Or keep both and select per shell:
+#      export UR7E_SITE_CONFIG=$PWD/config/site.real.yaml
+#
+#  Everything marked <FILL IN> is the entire sim -> real delta on the software
+#  side. See docs/MIGRATION.md for the host-level delta (ur_rtde source build,
+#  URCapX install from USB, dialout group, ...).
+#
+profile: real
+
+robot:
+  # Static IP of the UR7e controller on the wired teleop network.
+  ip: <FILL IN>            # e.g. 192.168.1.102
+
+  # Real cell has the Robotiq gripper. NOTE: on PolyScope X the legacy
+  # :63352 socket is closed -- reaching the gripper needs the ToolComm
+  # Forwarder URCapX (:54321) + socat + Modbus RTU, which the current
+  # RobotiqGripper client does NOT implement yet. Leave this false until that
+  # path is built, otherwise connect() will hang on the gripper handshake.
+  use_gripper: false
+
+  rtde_frequency: 500.0
+  use_external_control_urcap: true      # PolyScope X: keep true
+
+  external_control:
+    # THIS machine's LAN IP as the robot sees it (Spark's wired address).
+    # Must match what you type into the External Control Application tile
+    # on the teach pendant.
+    host_ip: <FILL IN>     # e.g. 192.168.1.10
+    port: 50002
+
+  servoj:
+    acceleration: 0.5
+    speed: 0.5
+    time_s: 0.008          # 1/125 -- real teleop runs at 125 Hz
+    lookahead_time_s: 0.2
+    gain: 300
+
+  cameras:
+    # RealSense on the real cell. On aarch64, pyrealsense2 is NOT pip
+    # installable -- see docs/MIGRATION.md.
+    # front:
+    #   type: intelrealsense
+    #   serial_number_or_name: <FILL IN>
+    #   width: 640
+    #   height: 480
+    #   fps: 30
+    wrist:
+      type: opencv
+      index_or_path: /dev/video0
+      width: 640
+      height: 480
+      fps: 30
+
+teleop:
+  gello:
+    # by-id paths are tied to the FTDI chip, so this string is unchanged when
+    # the U2D2 is moved between hosts.
+    port: /dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_FTAU58XG-if00-port0
+    baudrate: 57600
+    mock: false            # real leader arm attached
+
+  keyboard_joint:
+    step_rad: 0.02
+    gripper_step: 0.05
+
+record:
+  fps: 30
+  dataset_prefix: ur7e_real
+  root: ~/.cache/ur7e_lerobot/datasets

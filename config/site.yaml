@@ -1,0 +1,83 @@
+# ============================================================================
+#  SITE CONFIG -- the one file you edit when moving between machines/robots.
+# ============================================================================
+#
+#  Read by the `ur7e_site` package; every plugin config below pulls its
+#  defaults from here, so `lerobot-teleoperate --robot.type=ur5e` needs no IP
+#  on the command line. CLI flags still override these values.
+#
+#  ACTIVE PROFILE: ursim  (URSim PolyScope X 10.12.1 on this x86_64 box)
+#  To drive the real UR7e, copy config/site.real.example.yaml over this file
+#  (or export UR7E_SITE_CONFIG=/abs/path/to/site.real.yaml).
+#
+profile: ursim
+
+robot:
+  # URSim container address on the `ursim_net` docker bridge.
+  # Real robot: its static LAN IP.
+  ip: 192.168.56.101
+
+  # No tool I/O in URSim, so no Robotiq gripper. The action/observation vectors
+  # stay 7-wide either way (gripper is pinned to 0.0 when disabled) so datasets
+  # recorded here keep the same shape as datasets recorded on the real cell.
+  use_gripper: false
+
+  # RTDE receive/control frequency requested from the controller (Hz).
+  rtde_frequency: 500.0
+
+  # PolyScope X (>=10.8) refuses the classic "upload a script over :30002"
+  # route, so ur_rtde must be told to use the External Control URCapX instead.
+  # Set to false only for legacy PolyScope 5 controllers.
+  use_external_control_urcap: true
+
+  external_control:
+    # Where the ROBOT connects back to -- i.e. THIS machine, as seen by the
+    # robot. For URSim on the ursim_net bridge that is the bridge gateway.
+    # NEVER 127.0.0.1/localhost: inside the container that means the container.
+    host_ip: 192.168.56.1
+    port: 50002
+
+  # servoJ streaming parameters (see ur_rtde docs). `time_s` should be close to
+  # the control-loop period: too short and the arm reaches the target and stops
+  # until the next command (steppy motion), too long and it lags behind.
+  servoj:
+    acceleration: 0.5
+    speed: 0.5
+    time_s: 0.033          # matched to the 30 fps loop used for recording
+    lookahead_time_s: 0.2
+    gain: 300
+
+  # Cameras attached to the follower side. URSim has no vision, so this is a
+  # plumbing check only -- any image source is fine. `wrist` is the UVC webcam
+  # on this box (Logitech 046d:0825).
+  cameras:
+    wrist:
+      type: opencv
+      index_or_path: /dev/video0
+      width: 640
+      height: 480
+      fps: 30
+
+teleop:
+  gello:
+    # Stable by-id path -- identical on every host the U2D2 is plugged into.
+    port: /dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_FTAU58XG-if00-port0
+    baudrate: 57600
+    # The GELLO leader currently lives on spark-dadd, so this box runs the
+    # simulated backend. Flip to false once the U2D2 is physically moved here.
+    mock: true
+    # Motion the simulated leader plays back (only used when mock: true).
+    mock_motion:
+      amplitude_rad: 0.20
+      period_s: 8.0
+
+  keyboard_joint:
+    step_rad: 0.02
+    gripper_step: 0.05
+
+record:
+  fps: 30
+  # Dataset ids are prefixed with this so URSim plumbing data is never mistaken
+  # for real-robot data.
+  dataset_prefix: ur7e_ursim
+  root: ~/.cache/ur7e_lerobot/datasets
