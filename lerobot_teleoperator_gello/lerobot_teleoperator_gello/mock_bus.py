@@ -38,6 +38,11 @@ HOME_COUNTS: dict[str, int] = {
 #: ``gripper_travel_counts``, matching the real device's wiring.
 HOME_GRIPPER_COUNTS: int = 2048
 
+#: Wall time one ``sync_read`` of the 7 servos costs on real hardware
+#: (U2D2 at 57600 baud). The mock spends the same time on purpose -- see the
+#: note in :meth:`MockDynamixelBus.sync_read`.
+DEFAULT_READ_LATENCY_S: float = 0.003
+
 
 class MockDynamixelBus:
     """Minimal stand-in for ``lerobot.motors.dynamixel.DynamixelMotorsBus``.
@@ -56,6 +61,7 @@ class MockDynamixelBus:
         period_s: float = 8.0,
         rad_per_count: float = 2 * math.pi / (4096 - 1),
         joint_signs: list[int] | None = None,
+        read_latency_s: float = DEFAULT_READ_LATENCY_S,
     ):
         self.port = port
         self.motors = motors
@@ -65,6 +71,7 @@ class MockDynamixelBus:
 
         self.amplitude_rad = amplitude_rad
         self.period_s = period_s
+        self.read_latency_s = read_latency_s
         self._rad_per_count = rad_per_count
         self._joint_signs = joint_signs or [1] * 6
 
@@ -118,6 +125,15 @@ class MockDynamixelBus:
         if register != "Present_Position":
             raise NotImplementedError(f"MockDynamixelBus only simulates Present_Position, got {register!r}")
 
+        # Deliberate sleep. Gello runs this in a background thread with no
+        # pacing of its own (`_read_loop` is a bare while-loop) because on real
+        # hardware the serial round-trip paces it. Returning instantly would
+        # turn that thread into a GIL-hogging spin loop and add milliseconds of
+        # latency to the *robot* control path -- measured at ~5 ms/tick, enough
+        # to drag a 125 Hz teleop loop down to 86 Hz.
+        if self.read_latency_s > 0:
+            time.sleep(self.read_latency_s)
+
         phase = self._phase()
         out: dict[str, int] = {}
         for idx, (name, home) in enumerate(HOME_COUNTS.items()):
@@ -127,7 +143,7 @@ class MockDynamixelBus:
             sign = self._joint_signs[idx] if idx < len(self._joint_signs) else 1
             out[name] = int(round(home + sign * offset_rad / self._rad_per_count))
 
-        # Gripper: 0..1 triangle-ish wave over the calibrated travel.
+        # Gripper: 0..1 raised-cosine sweep over the calibrated travel.
         grip_frac = 0.5 * (1.0 - math.cos(phase))
         out["gripper"] = int(round(HOME_GRIPPER_COUNTS - grip_frac * 575))
         return out

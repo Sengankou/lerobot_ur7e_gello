@@ -58,7 +58,16 @@ HOME_KEY = " "
 QUIT_KEYS = {"\x1b", "\x03"}  # esc, ctrl-c
 
 
+#: Printed on connect so the operator does not have to look up the mapping.
+KEYMAP_HELP = (
+    "keys: joint_0 q/a  joint_1 w/s  joint_2 e/d  joint_3 r/f  joint_4 t/g  "
+    "joint_5 y/h  gripper o/p  home <space>  quit <esc>"
+)
+
+
 class KeyboardJoint(Teleoperator):
+    """Keyboard joint-jog teleoperator emitting the same action dict as GELLO."""
+
     config_class = KeyboardJointConfig
     name = "keyboard_joint"
 
@@ -144,7 +153,7 @@ class KeyboardJoint(Teleoperator):
             self._start_pynput_listener()
 
         self._connected = True
-        logger.info("%s connected (backend=%s). %s", self, backend, self.__doc__.splitlines()[0])
+        logger.info("%s connected (backend=%s). %s", self, backend, KEYMAP_HELP)
 
     def disconnect(self) -> None:
         if not self._connected:

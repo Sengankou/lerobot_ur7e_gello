@@ -1,0 +1,12 @@
+{
+  "joint_offsets": {
+    "joint_0": 4096,
+    "joint_1": 5212,
+    "joint_2": 2942,
+    "joint_3": 2140,
+    "joint_4": 2048,
+    "joint_5": 2980
+  },
+  "gripper_open_position": 2048,
+  "gripper_closed_position": 1473
+}
