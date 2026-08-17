@@ -139,9 +139,16 @@ finished. Complete the yellow program-nodes" is what that looks like.
 
 **Set *Loop Program* on the Main Program node.** `stopScript()` at the end of
 every LeRobot session stops the program, and without looping each subsequent
-run needs a manual play press. With looping the program restarts itself and
-unattended runs work. On the real cell, weigh that against wanting an explicit
-human play press before the arm can be driven.
+run needs a manual play press. With looping the program restarts itself, the
+injected script survives, and unattended runs work. On the real cell, weigh
+that against wanting an explicit human play press before the arm can be driven.
+
+**Do not press stop or pause in the UI.** That is a different kind of stop: it
+returns the program to DRAFT (visible in the logs as
+`PATCH /…/program/execution/0/0/DRAFT`) and **discards the injected script**,
+so both nodes go yellow and you are back to the handshake above. A
+`stopScript()` from LeRobot does not do this. Treat the pendant/browser as a
+window to look through, not a control panel to drive.
 
 ---
 
@@ -180,7 +187,7 @@ so datasets recorded before and after the gripper works stay compatible.
 | Symptom | First thing to check |
 | --- | --- |
 | `RTDEReceiveInterface` times out | ping the robot; RTDE service enabled? |
-| `RTDEControlInterface` times out | is the program **playing**? then Host IP in the External Control tile, then `use_external_control_urcap`. NOTE: a playing program is not proof the node is valid -- the URScript cache also expires when the controller sits idle. Check the node colour in the UI |
+| `RTDEControlInterface` times out | `scripts/ursim_state.py` first: `1:STOPPED` / `4:PAUSED` just needs play. If it says `2:PLAYING` and it still fails, check the node colour in the UI -- a playing program is not proof the injected script is there |
 | Program node yellow / "not finished" | `python scripts/ursim_reconnect.py`, then Update program + play while it waits (§4) |
 | `lerobot-*` reports an unknown robot type | `scripts/verify_env.py`; a plugin import failed, or pip installed into `base` |
 | `observation.state` missing at rollout | motor features must end in `.pos` |
