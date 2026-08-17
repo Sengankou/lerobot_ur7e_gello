@@ -175,8 +175,6 @@ class UR5E(Robot):
         for cam in self.cameras.values():
             cam.disconnect()
 
-        self._last_goal = None
-
     @property
     def is_calibrated(self) -> bool:
         # UR arms are calibrated by the controller itself; nothing for LeRobot
@@ -229,7 +227,6 @@ class UR5E(Robot):
             sj.lookahead_time_s,
             sj.gain,
         )
-        self._last_goal = goal
 
         sent: dict[str, float] = dict(zip(JOINT_KEYS, goal, strict=True))
 
