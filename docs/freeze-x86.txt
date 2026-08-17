@@ -2,9 +2,9 @@
 # machine : x86_64 / Linux 7.0.0-28-generic
 # gpu     : NVIDIA GeForce RTX 5080, 580.173.02
 # python  : Python 3.12.13
-# lerobot : v0.6.0 @ 30da8e687a6dfc617fcd94afc367ac7071c376ce
+# lerobot : v0.6.0 @ 30da8e687a6dfc617fcd94afc367ac7071c376ce (editable from ~/lerobot)
 # ffmpeg  : ffmpeg version 7.1.1 Copyright (c) 2000-2025 the FFmpeg developers
-# date    : 2026-08-16T01:49:35+09:00
+# date    : 2026-08-17T21:51:02+09:00
 #
 # Regenerate with: pip freeze > docs/freeze-x86.txt
 # aarch64 deltas are in docs/MIGRATION.md -- do NOT pip install -r this file on the Spark.
@@ -24,8 +24,10 @@ charset-normalizer==3.5.1
 click==8.4.2
 cloudpickle==3.1.2
 cmake==4.1.3
+contourpy==1.3.3
 cuda-bindings==13.0.3
 cuda-pathfinder==1.6.0
+cycler==0.12.1
 datasets==4.8.5
 deepdiff==8.6.2
 defusedxml==0.7.1
@@ -39,6 +41,7 @@ evdev==1.9.3
 executing @ file:///home/conda/feedstock_root/build_artifacts/executing_1756729339227/work
 Farama-Notifications==0.0.6
 filelock==3.32.3
+fonttools==4.63.0
 frozenlist==1.8.0
 fsspec==2026.2.0
 gitdb==4.0.12
@@ -56,12 +59,14 @@ ipython_pygments_lexers @ file:///home/conda/feedstock_root/build_artifacts/ipyt
 jedi @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_jedi_1782251948/work
 Jinja2==3.1.6
 jsonlines==4.0.0
-lerobot @ file:///home/sengankou/lerobot
--e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@3238170e1751cfe441bae07fdc3a9b60eaeb55ae#egg=lerobot_robot_ur5e&subdirectory=lerobot_robot_ur5e
--e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@3238170e1751cfe441bae07fdc3a9b60eaeb55ae#egg=lerobot_teleoperator_gello&subdirectory=lerobot_teleoperator_gello
--e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@3238170e1751cfe441bae07fdc3a9b60eaeb55ae#egg=lerobot_teleoperator_keyboard_joint&subdirectory=lerobot_teleoperator_keyboard_joint
+kiwisolver==1.5.0
+-e git+https://github.com/huggingface/lerobot.git@30da8e687a6dfc617fcd94afc367ac7071c376ce#egg=lerobot
+-e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@a73e286179fca34158eb0058ba6f21b3045a793a#egg=lerobot_robot_ur5e&subdirectory=lerobot_robot_ur5e
+-e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@a73e286179fca34158eb0058ba6f21b3045a793a#egg=lerobot_teleoperator_gello&subdirectory=lerobot_teleoperator_gello
+-e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@a73e286179fca34158eb0058ba6f21b3045a793a#egg=lerobot_teleoperator_keyboard_joint&subdirectory=lerobot_teleoperator_keyboard_joint
 markdown-it-py==4.2.0
 MarkupSafe==3.0.3
+matplotlib==3.11.1
 matplotlib-inline @ file:///home/conda/feedstock_root/build_artifacts/matplotlib-inline_1778264321245/work
 mdurl==0.1.2
 mergedeep==1.3.4
@@ -107,6 +112,7 @@ pydantic==2.13.4
 pydantic_core==2.46.4
 Pygments @ file:///home/conda/feedstock_root/build_artifacts/pygments_1774796700044/work
 pynput==1.8.2
+pyparsing==3.3.2
 pyserial==3.5
 python-dateutil==2.9.0.post0
 python-xlib==0.33
@@ -139,7 +145,7 @@ typing-inspect==0.9.0
 typing-inspection==0.4.4
 typing_extensions @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_typing_extensions_1783002732/work
 tzdata==2026.3
--e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@3238170e1751cfe441bae07fdc3a9b60eaeb55ae#egg=ur7e_site&subdirectory=ur7e_site
+-e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@a73e286179fca34158eb0058ba6f21b3045a793a#egg=ur7e_site&subdirectory=ur7e_site
 ur_rtde==1.6.5
 urllib3==2.7.0
 wandb==0.27.2

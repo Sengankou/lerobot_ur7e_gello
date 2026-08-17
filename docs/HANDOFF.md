@@ -336,6 +336,15 @@ URCap 自身の設定画面に書いてある: *"The URScript is not fetched whe
 ①PC 側でリスナを起動 → ②Program ノードを**開いた状態で** "Update program" を押す（ノードが valid になる）→ ③▶ 再生、の順。
 さらに **プログラムを編集すると（Loop Program のトグルですら）キャッシュが無効化され、ノードが黄色に戻る**。「Program is not finished. Complete the yellow program-nodes」はこれ。①〜③をやり直す。
 
+**追記 2026-08-17 ✅実測: 編集しなくても、放置するとキャッシュは失効する。** 約 43 時間アイドルの後、
+`runtime state` が `2:PLAYING` を返しているにもかかわらず両ノードが黄色になり、
+ur_rtde が「RTDE control program is not running on controller」で 60 秒タイムアウトした。
+`ursim_state.py` が PLAYING と言っていても、それは**ノードが有効であることを意味しない**（区別が付かないので UI を見る必要がある）。
+復旧は同じ①〜③だが、ur_rtde のコンストラクタは 60 秒でタイムアウトするため
+「リスナを立ててから UI を操作する」のが時間との競争になる。
+**`scripts/ursim_reconnect.py`** はこの競争を無くすためのもので、成功するまで再試行しながら待ち続ける。
+（成功後に `stopScript()` を呼ばずソケットだけ落とすので、プログラムは走ったまま次のコマンドに渡せる。）
+
 **B. torchcodec は torch と ABI で結合しており、エラーメッセージがそれを言わない** ✅実測
 lerobot の制約は `torchcodec<0.12` と広いので、resolver は 0.11.1 を引く。しかし 0.11 は torch≥2.11 向けで、torch 2.10 では `undefined symbol: torch_dtype_float4_e2m1fn_x2` で落ちる。**torch 2.10 ↔ torchcodec 0.10.0** が正しい対。
 加えて **conda の ffmpeg は `$CONDA_PREFIX/lib` にあり loader path に載っていない**ため `libavutil.so.59: cannot open shared object file` も同時に出る。`activate.d` フックで `LD_LIBRARY_PATH` を通す（`scripts/setup_env.sh` が設置する）。

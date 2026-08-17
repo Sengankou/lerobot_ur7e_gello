@@ -180,8 +180,8 @@ so datasets recorded before and after the gripper works stay compatible.
 | Symptom | First thing to check |
 | --- | --- |
 | `RTDEReceiveInterface` times out | ping the robot; RTDE service enabled? |
-| `RTDEControlInterface` times out | is the program **playing**? then Host IP in the External Control tile, then `use_external_control_urcap` |
-| Program node yellow / "not finished" | re-do Update program with a listener running (§4) |
+| `RTDEControlInterface` times out | is the program **playing**? then Host IP in the External Control tile, then `use_external_control_urcap`. NOTE: a playing program is not proof the node is valid -- the URScript cache also expires when the controller sits idle. Check the node colour in the UI |
+| Program node yellow / "not finished" | `python scripts/ursim_reconnect.py`, then Update program + play while it waits (§4) |
 | `lerobot-*` reports an unknown robot type | `scripts/verify_env.py`; a plugin import failed, or pip installed into `base` |
 | `observation.state` missing at rollout | motor features must end in `.pos` |
 | dataset records but will not load | torchcodec/torch/ffmpeg triangle (§3) |
