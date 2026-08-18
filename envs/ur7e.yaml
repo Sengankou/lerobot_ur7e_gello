@@ -6,62 +6,74 @@
 # ===========================================================================
 #  THIS FILE IS THE PLACE TO ADD A DEPENDENCY.
 #  Add the package below, re-run the update command, commit the change. Same
-#  workflow as envs/so101.yaml and envs/smolvla.yaml on the Spark. Do not
-#  `pip install` into the env ad hoc -- it is lost on the next rebuild and the
-#  next person cannot reproduce your environment.
+#  workflow as envs/so101.yaml and envs/openarm.yaml. Do not `pip install`
+#  into the env ad hoc -- it is lost on the next rebuild and the next person
+#  cannot reproduce your environment.
 # ===========================================================================
 #
-# Difference from envs/so101.yaml, on purpose: that file carries the editable
-# install line (`-e /home/robots/lerobot[...]`) inside the yaml. This one does
-# not, because this repo is also developed on a non-Spark box where the user is
-# not `robots`, and a hard-coded /home/robots path silently builds the env
-# against a tree that is not there. `scripts/setup_env.sh` performs the five
-# editable installs with paths computed from the checkout location:
+# TARGET: DGX Spark (aarch64, GB10, CUDA 13). The x86_64 dev box this stack was
+# originally verified on is retired, so the pins below are Spark-only.
 #
-#   <ur7e root>/lerobot                              lerobot core, pinned v0.6.0
-#   <ur7e root>/lerobot_ur7e_gello/ur7e_site         site config loader
-#   <ur7e root>/lerobot_ur7e_gello/lerobot_robot_ur7e
-#   <ur7e root>/lerobot_ur7e_gello/lerobot_teleoperator_gello
-#   <ur7e root>/lerobot_ur7e_gello/lerobot_teleoperator_keyboard_joint
+# Not in this file, by design: the editable installs. scripts/setup_env.sh
+# performs them with paths computed from the checkout, because a hard-coded
+# /home/robots path silently builds against a tree that may not be there:
+#
+#   ~/ur7e/lerobot                              lerobot core, pinned v0.6.0
+#   ~/ur7e/lerobot_ur7e_gello/ur7e_site         site config loader
+#   ~/ur7e/lerobot_ur7e_gello/lerobot_robot_ur7e
+#   ~/ur7e/lerobot_ur7e_gello/lerobot_teleoperator_gello
+#   ~/ur7e/lerobot_ur7e_gello/lerobot_teleoperator_keyboard_joint
 #
 # The lerobot core clone is deliberately NOT the shared ~/lerobot that the
-# SO-101 / OpenArm / smolvla / pi environments install from: this stack pins
+# so101 / openarm / smolvla / pi environments install from: this stack pins
 # v0.6.0 and would drag that shared clone off whatever ref those envs expect.
 #
-# --------------------------------------------------------------------------
-# Pin rationale:
-#   python 3.12   : lerobot v0.6.0 requires-python >= 3.12
-#   ffmpeg 7.1.1  : 8.x is not supported by the torchcodec build we use
-#   torch         : lerobot v0.6.0 allows >=2.7,<2.12. Pinned PER ARCH, see below.
-#   cu130         : sm_120 kernels (RTX 5080). NOTE GB10 is sm_121 and torch
-#                   2.10 does not ship sm_121 -- it PTX-JITs from compute_120,
-#                   which costs a one-off delay at first kernel launch. The
-#                   so101 / openarm / smolvla environments run this same
-#                   combination on the Sparks today, so it works; 2.11 may ship
-#                   sm_121 natively, check `torch.cuda.get_arch_list()`.
-#   torchcodec    : must match torch, and the error when it does not is
-#                   "undefined symbol: torch_dtype_..." at import, NOT a
-#                   version complaint. Pairs: torch 2.10 <-> 0.10.x,
-#                   torch 2.11 <-> 0.11.x.
-#   rerun-sdk     : what lerobot[viz] pulls in; listed directly so it can be
-#                   added/removed here without touching the extras string.
+# ---------------------------------------------------------------------------
+# WHY torch IS PINNED HERE AND NOT IN envs/openarm.yaml
 #
-# WHY THE PER-ARCH SPLIT
-#   torchcodec has NO aarch64 wheel before 0.11.0 (verified on PyPI), and
-#   0.11 requires torch >= 2.11. So x86_64 and aarch64 cannot share one pin:
-#     x86_64  : torch 2.10.0 + torchcodec 0.10.0  <- the combination the full
-#               verification ladder went green on
-#     aarch64 : torch 2.11.0 + torchcodec 0.11.1  <- the only pair that has
-#               wheels for both, and still inside lerobot's torch<2.12
-#   pip environment markers do the selection, so one file serves both.
+#   openarm.yaml leaves `torch` / `torchvision` bare and lets pip decide. That
+#   is safe *there*, because torchvision declares an exact torch dependency, so
+#   pip pairs them correctly on its own.
+#
+#   It stops being safe as soon as torchcodec enters, which it does here via
+#   lerobot[dataset] (needed for record / train). torchcodec is ABI-coupled to
+#   torch but declares NO torch dependency at all -- its requires_dist is empty.
+#   pip therefore cannot pair them, picks the newest allowed by lerobot's wide
+#   `torchcodec<0.12`, and the mismatch surfaces at import as
+#
+#       undefined symbol: torch_dtype_float4_e2m1fn_x2
+#
+#   which reads like a corrupt install, not a version problem. Hit on
+#   2026-08-16 (x86) and again on 2026-08-18 (Spark).
+#
+#   So all three are pinned together, and they must be moved together.
+#     torch 2.10 <-> torchvision 0.25 <-> torchcodec 0.10
+#     torch 2.11 <-> torchvision 0.26 <-> torchcodec 0.11   <- used here
+# ---------------------------------------------------------------------------
+#
+# Pin rationale:
+#   python 3.12       lerobot v0.6.0 requires-python >= 3.12
+#   ffmpeg 7.1.1      8.x is not supported by the torchcodec build we use
+#   torch 2.11.0      the LOWEST torch with an aarch64 torchcodec. torchcodec
+#                     ships no aarch64 wheel before 0.11.0, and 0.11 needs
+#                     torch >= 2.11. Still inside lerobot 0.6.0's torch<2.12.0.
+#   cu130             CUDA 13. GB10 is sm_121; check what this build actually
+#                     ships with `python -c "import torch;
+#                     print(torch.cuda.get_arch_list())"`. If sm_121 is absent,
+#                     compute_12x PTX forward-compiles to it -- a one-off JIT
+#                     delay at first kernel launch, not a failure. The so101 /
+#                     openarm / smolvla envs run this way on the Sparks today.
+#   rerun-sdk         what lerobot[viz] pulls in; listed directly so it can be
+#                     added or removed without touching the extras string.
 #
 # NOT here on purpose:
-#   pyrealsense2  : `conda install pyrealsense2` instead -- the version
-#                   lerobot[intelrealsense] pins has no aarch64 wheel.
-#                   See the "Intel Realsense セットアップ手順" wiki page.
-#   ur_rtde       : pulled in as a dependency of lerobot_robot_ur7e. On aarch64
-#                   there is no wheel, so Boost must be installed FIRST or the
-#                   source build fails halfway. See docs/MIGRATION.md §2.
+#   pyrealsense2      `conda install pyrealsense2` instead -- the version
+#                     lerobot[intelrealsense] pins has no aarch64 wheel.
+#                     See the "Intel Realsense セットアップ手順" wiki page.
+#   ur_rtde           a dependency of lerobot_robot_ur7e. No aarch64 wheel, so
+#                     it builds from source: Boost must be installed FIRST, and
+#                     it needs --no-build-isolation. setup_env.sh handles both;
+#                     see docs/MIGRATION.md §2.
 name: ur7e
 channels:
   - conda-forge
@@ -72,13 +84,8 @@ dependencies:
   - pip
   - pip:
       - --extra-index-url https://download.pytorch.org/whl/cu130
-      # x86_64 (RTX 5080 dev box)
-      - torch==2.10.0+cu130       ; platform_machine == "x86_64"
-      - torchvision==0.25.0+cu130 ; platform_machine == "x86_64"
-      - torchcodec==0.10.0        ; platform_machine == "x86_64"
-      # aarch64 (DGX Spark, GB10)
-      - torch==2.11.0+cu130       ; platform_machine == "aarch64"
-      - torchvision==0.26.0+cu130 ; platform_machine == "aarch64"
-      - torchcodec==0.11.1        ; platform_machine == "aarch64"
-      # arch-independent
+      # Move these three together or not at all -- see the note above.
+      - torch==2.11.0+cu130
+      - torchvision==0.26.0+cu130
+      - torchcodec==0.11.1
       - rerun-sdk>=0.24.0,<0.34.0

@@ -138,25 +138,48 @@ this triage if it still fails.
 
 ## 3. torch / torchcodec on aarch64
 
-**Settled 2026-08-18 on spark-3e31.** These two must move together, and the
-pair that works on aarch64 is *not* the pair that works on x86_64.
+**Settled 2026-08-18 on spark-3e31.** torch, torchvision and torchcodec must
+move as a set. `envs/ur7e.yaml` now pins all three for the Spark:
 
-| | x86_64 (RTX 5080) | aarch64 (GB10) |
-| --- | --- | --- |
-| torch | `2.10.0+cu130` | `2.11.0+cu130` |
-| torchvision | `0.25.0+cu130` | `0.26.0+cu130` |
-| torchcodec | `0.10.0` | `0.11.1` |
+| | pinned |
+| --- | --- |
+| torch | `2.11.0+cu130` |
+| torchvision | `0.26.0+cu130` |
+| torchcodec | `0.11.1` |
 
-The forcing constraint: **torchcodec has no aarch64 wheel before 0.11.0**
-(verified against the PyPI file list), and 0.11 requires torch >= 2.11. So the
-x86 pin cannot be reused. 2.11 is still inside lerobot 0.6.0's `torch<2.12.0`.
+2.11 is the **lowest** torch that has an aarch64 torchcodec: torchcodec ships no
+aarch64 wheel before 0.11.0 (verified against the PyPI file list), and 0.11
+requires torch >= 2.11. It is still inside lerobot 0.6.0's `torch<2.12.0`.
 
-`envs/ur7e.yaml` selects per architecture with pip environment markers, so one
-file serves both. Nothing to edit by hand.
+### Why these are pinned when envs/openarm.yaml leaves torch bare
 
-**The mismatch error does not mention versions.** A torchcodec built for a
-different torch fails at *import* with `undefined symbol: torch_dtype_...`,
-which reads like a corrupt install. If you see that, check the pairing first.
+`envs/openarm.yaml` writes `torch  # let pip decide` and that is fine *there*,
+because **torchvision declares an exact torch dependency**, so pip pairs those
+two correctly by itself.
+
+It stops being fine the moment torchcodec is in the picture, which it is here
+via `lerobot[dataset]` (needed for record / train). **torchcodec is ABI-coupled
+to torch but declares no torch dependency at all** -- its `requires_dist` is
+empty. pip cannot pair them, so it takes the newest version allowed by
+lerobot's very wide `torchcodec<0.12`, and the mismatch appears only at import:
+
+```text
+undefined symbol: torch_dtype_float4_e2m1fn_x2
+```
+
+which reads like a corrupt install rather than a version problem. This bit us
+twice -- on x86 (2026-08-16) and again on the Spark (2026-08-18).
+
+A second, smaller reason to pin: openarm.yaml's comment says
+`# 2.12.0+cu130`, but the `lerobot-info` output on the same wiki page reports
+`2.10.0+cu130`. "Let pip decide" drifts away from what the file claims.
+
+Working pairs, for when torch has to move:
+
+```text
+torch 2.10  <->  torchvision 0.25  <->  torchcodec 0.10   (x86_64 only)
+torch 2.11  <->  torchvision 0.26  <->  torchcodec 0.11   (aarch64 + x86_64)
+```
 
 ### GB10 is sm_121 and torch may not ship kernels for it
 
