@@ -50,20 +50,27 @@ def main() -> int:
             arch_list = torch.cuda.get_arch_list()
             line("built for", ", ".join(arch_list))
             native = f"sm_{cap[0]}{cap[1]}"
-            if native not in arch_list:
-                # A NOTE, not a problem. PTX from compute_1xx forward-compiles
-                # to a newer minor in the same family, so this costs a one-off
-                # JIT delay at first kernel launch rather than breaking.
-                # Confirmed in practice: the so101 / openarm / smolvla
-                # environments run torch 2.10+cu130 on GB10 (sm_121) on the
-                # Sparks today. Escalate to the NGC PyTorch container only if
-                # you actually observe a hang.
-                ptx = [a for a in arch_list if a.startswith("compute_")]
+            same_family = [a for a in arch_list if a.startswith(f"sm_{cap[0]}")]
+            ptx = [a for a in arch_list if a.startswith("compute_")]
+            if native in arch_list:
+                pass  # exact kernels present, nothing to say
+            elif same_family:
+                # CUDA 13 runs a cubin on a newer minor of the same
+                # architecture family. Measured on GB10 (sm_121) with torch
+                # 2.11, whose arch list stops at sm_120 and carries no PTX at
+                # all: matmul runs at full speed with correct results, and
+                # torch emits no capability warning. So same-major is fine.
+                line("family compat", f"{native} served by {', '.join(same_family)}")
+            elif ptx:
                 notes.append(
-                    f"no native {native} kernels in this torch build "
-                    f"(has {', '.join(arch_list)}). Expect a one-off PTX-JIT "
-                    f"delay at first kernel launch"
-                    + (f", compiled from {ptx[-1]}." if ptx else ".")
+                    f"no {native} kernels and no same-family kernels; torch will "
+                    f"PTX-JIT from {ptx[-1]} at first launch (one-off delay)."
+                )
+            else:
+                problems.append(
+                    f"this torch build has neither {native} kernels, nor sm_{cap[0]}x "
+                    f"kernels to fall back on, nor PTX to JIT from (has "
+                    f"{', '.join(arch_list)}). It cannot run on this GPU."
                 )
         else:
             problems.append("CUDA is not available; training and rollout will fall back to CPU.")

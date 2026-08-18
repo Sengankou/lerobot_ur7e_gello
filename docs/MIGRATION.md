@@ -181,34 +181,29 @@ torch 2.10  <->  torchvision 0.25  <->  torchcodec 0.10   (x86_64 only)
 torch 2.11  <->  torchvision 0.26  <->  torchcodec 0.11   (aarch64 + x86_64)
 ```
 
-### GB10 is sm_121 and torch may not ship kernels for it
+### GB10 is sm_121 -- resolved, no action needed
 
-`torch 2.10+cu130` reports:
+**Measured on spark-3e31, 2026-08-18, torch 2.11.0+cu130.**
 
 ```text
-UserWarning: Found GPU0 NVIDIA GB10 which is of cuda capability 12.1.
-Minimum and Maximum cuda capability supported by this version of PyTorch is (8.0) - (12.0)
-built for: sm_80, sm_90, sm_100, sm_110, sm_120, compute_120
+compute capability : sm_121
+built for          : sm_80, sm_90, sm_100, sm_110, sm_120
 ```
 
-**This is a note, not a blocker.** `compute_120` PTX forward-compiles to sm_121
-(same 12.x family), so the cost is a one-off JIT delay at first kernel launch,
-not a failure. Evidence that it works in practice: the **so101 / openarm /
-smolvla environments run this same torch 2.10+cu130 on GB10 on the Sparks
-today**, and their wiki pages record no such problem.
+sm_121 is absent and, unlike torch 2.10, there is **no `compute_120` PTX to JIT
+from either**. That looks alarming and is not: a 4096x4096 matmul runs at full
+speed on the first call with correct results, and torch emits no capability
+warning (2.10 did: *"Found GPU0 NVIDIA GB10 which is of cuda capability 12.1.
+Minimum and Maximum ... is (8.0) - (12.0)"*).
 
-`scripts/verify_env.py` reports it under NOTES rather than PROBLEMS for exactly
-this reason -- an earlier version failed the check here, which would have turned
-rung 0 of the ladder RED on every Spark.
+The reading that fits: **CUDA 13 runs an sm_120 cubin on an sm_121 device**
+(same architecture family), so torch 2.11 dropped both the PTX and the warning
+on purpose. Nothing to fix, and **the NGC container is not needed**.
 
-Check whether 2.11 ships sm_121 natively once installed:
-
-```bash
-python -c "import torch; print(torch.cuda.get_arch_list())"
-```
-
-Escalate to the NGC PyTorch container only if you actually observe a hang, not
-because of the warning alone.
+The inherited handoff's claim that this configuration is "known to hang on
+GB10" did not reproduce. `scripts/verify_env.py` now treats same-major-family
+coverage as fine, and only fails when there is no exact arch, no same-family
+arch, *and* no PTX.
 
 ### RealSense
 
