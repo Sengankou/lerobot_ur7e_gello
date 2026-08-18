@@ -109,11 +109,12 @@ class Gello(Teleoperator):
 
         self.configure()
 
-        if self.config.use_async:
-            # Initial read to populate latest_action
-            raw_action = self.bus.sync_read("Present_Position", normalize=False)
-            self.latest_action = self._process_action(raw_action)
-            self._start_read_thread()
+        # Only prime the async reader once calibration exists. `lerobot-calibrate`
+        # calls connect(calibrate=False) and then calibrate() itself, so this
+        # path legitimately runs with self.calibration still None -- and
+        # _process_action would blow up on it. _start_async_reader() is called
+        # again at the end of calibrate() to cover that flow.
+        self._start_async_reader()
 
         logger.info(f"{self} connected.")
 
@@ -167,6 +168,11 @@ class Gello(Teleoperator):
             json.dump(calibration.__dict__, f, indent=2)
         logger.info(f"Calibration saved to {self.calibration_fpath}")
 
+        # Covers the lerobot-calibrate flow: connect(calibrate=False) skipped
+        # this, and the caller may go straight on to reading actions.
+        if self.is_connected:
+            self._start_async_reader()
+
     def _warn_on_implausible_offsets(self, calibration: "GelloCalibration") -> None:
         """Sanity-check fresh offsets against the documented bench values.
 
@@ -216,6 +222,11 @@ class Gello(Teleoperator):
         # Raw motor counts -> joint angles in rad, gripper -> [0, 1].
         # Keys carry the ".pos" suffix to match `action_features`; the raw
         # dict coming off the bus is keyed by bare motor name.
+        if self.calibration is None:
+            raise RuntimeError(
+                f"{self} has no calibration, so raw motor counts cannot be converted to "
+                "joint angles. Run: lerobot-calibrate --teleop.type=gello --teleop.id=gello"
+            )
         result = {}
         for idx, motor in enumerate(self.JOINT_NAMES):
             offset = self.calibration.joint_offsets[motor]
@@ -246,6 +257,29 @@ class Gello(Teleoperator):
 
             except Exception:
                 time.sleep(0.1)
+
+    def _start_async_reader(self) -> None:
+        """Prime latest_action and start the background read loop.
+
+        No-op when async reading is off, when there is no calibration yet (the
+        readings cannot be converted to joint angles without it), or when the
+        thread is already running.
+        """
+        if not self.config.use_async:
+            return
+        if not self.is_calibrated:
+            logger.info(
+                "%s: no calibration yet, deferring the async read thread. "
+                "It starts once calibrate() has run.",
+                self,
+            )
+            return
+        if self.thread is not None and self.thread.is_alive():
+            return
+
+        raw_action = self.bus.sync_read("Present_Position", normalize=False)
+        self.latest_action = self._process_action(raw_action)
+        self._start_read_thread()
 
     def _start_read_thread(self) -> None:
         if self.thread is not None and self.thread.is_alive():
