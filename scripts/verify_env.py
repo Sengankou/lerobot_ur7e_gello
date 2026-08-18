@@ -70,6 +70,31 @@ def main() -> int:
     except Exception as e:
         problems.append(f"torch import failed: {e}")
 
+    # torchcodec is the one that silently mispairs. lerobot's constraint is wide
+    # and torchcodec declares no torch dependency at all, so the resolver can
+    # hand you a build for a different torch. It fails at *import*, and only
+    # when reading a dataset back -- long after recording "succeeded".
+    print("\n== torchcodec (video decode)")
+    try:
+        import importlib.metadata as _md
+
+        line("version", _md.version("torchcodec"))
+        from torchcodec.decoders import VideoDecoder  # noqa: F401
+
+        line("decoder import", "ok")
+    except Exception as e:
+        first = str(e).strip().splitlines()[0] if str(e).strip() else repr(e)
+        line("decoder import", f"FAILED - {first[:100]}")
+        problems.append(
+            "torchcodec cannot be imported, so datasets will record fine and then "
+            "fail to load. Two usual causes: (a) it is paired with a different "
+            "torch -- 'undefined symbol' means this, and the fix is to move "
+            "torch/torchvision/torchcodec together (see envs/ur7e.yaml); "
+            "(b) $CONDA_PREFIX/lib is not on the loader path -- 'libavutil.so.NN: "
+            "cannot open shared object file' means this, and scripts/setup_env.sh "
+            "installs the activate.d hook that fixes it."
+        )
+
     print("\n== lerobot")
     try:
         import lerobot
