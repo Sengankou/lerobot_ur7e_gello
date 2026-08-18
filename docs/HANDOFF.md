@@ -395,3 +395,47 @@ LeRobot セッション終了時の `stopScript()` でプログラムは停止�
 ### 12.6 スコープ外のまま残ったもの
 
 グリッパ実経路（PolyScope X の ToolComm Forwarder + socat + Modbus は未実装。`use_gripper: false` が実機でも当面正）／カメラ映像の意味（URSim に視覚なし）／実機の制御周期ジッタ・実時間性／安全設定・TCP・ペイロード。詳細は `docs/MIGRATION.md`。
+
+
+---
+
+## 13. 訂正（2026-08-18）
+
+### 13.1 RTDE と :50002 の役割 — §2・§12 の記述は誤りだった
+
+当初「RTDE = 状態を読む経路 / External Control :50002 = servoJ 目標角を送る経路」と説明していたが、**誤り**。
+
+ロボット上で走る URScript（= External Control が配送してくるもの）を精査したところ、
+**ソケット呼び出しが 0 回・ポート番号の出現も 0 回**で、コマンドは
+`read_input_integer_register` / `read_input_float_register` からしか読んでいなかった。
+
+正しい役割分担:
+
+| | 接続の向き | 何が流れるか |
+| --- | --- | --- |
+| **RTDE `:30004`** | PC → ロボット | **双方向。制御はここで完結する。** 状態（500 Hz）が返り、servoJ の目標角も RTDE の input register 書き込みとして**ここを通る** |
+| **External Control `:50002`** | ロボット → PC | **URScript のテキストのみ。起動時に 1 回きり。** 以後の制御には関与しない |
+
+つまり `:50002` は「制御経路」ではなく「**プログラムの配送経路**」。
+`ur_rtde` を `FLAG_USE_EXT_UR_CAP` 付きで生成すると `host_ip:50002` に
+**スクリプト配布サーバ**が立ち、URCap の `Update program` がそこへ取りに来る。
+「リスナを先に起動する」のはこのため（配る側が居ないと取ってくるものが無い）。
+
+`host_ip` が「ロボットから見た PC のアドレス」なのも、この取りに来る先を指すからである。
+
+### 13.2 名前の変更
+
+- `lerobot_robot_ur5e` → **`lerobot_robot_ur7e`**、登録名 `ur5e` → **`ur7e`**。
+  この名前はデータセットの `info.json` の `robot_type` に焼き込まれるため、実際に動かした機体の名前にした。
+  実データがまだ無いこの時点で実施した。
+- `scripts/ursim_state.py` → **`scripts/robot_state.py`**。RTDE receive しか使っておらず URSim 固有の要素は無い。
+
+### 13.3 GELLO 較正値の不一致（要確認）
+
+社内 Wiki「GELLO Setup手順」内で、実測ログと `PORT_CONFIG_MAP` の登録値が食い違っている。
+
+- 実測ログ: `[4, 5, 3, 2, 2, **5**] * π/2`
+- 登録値: `[4, 5, 3, 2, 2, **3**] * π/2`
+
+joint_5 が 5 と 3 で違う。どちらかが誤記。本リポジトリの `mock_bus.py` は登録値側（3）を採っている。
+lerobot 側は較正を取り直すので実害は無いが、**gello_software 側の登録値が誤っている可能性**があるため実機で要確認。
