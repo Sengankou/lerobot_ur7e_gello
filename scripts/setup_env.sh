@@ -101,6 +101,54 @@ python -m pip install -e "$REPO_DIR/ur7e_site"
 # is machine-dependent; the packages they pull in are documented in the yaml.
 python -m pip install -e "${LEROBOT_DIR}[dataset,training,smolvla,dynamixel,hardware,async]"
 
+# ------------------------------------------------------------------ ur_rtde
+# There is no aarch64 wheel, so pip builds ur_rtde from source. Two traps, and
+# they only bite on aarch64:
+#
+#   1. Boost must ALREADY be installed. See docs/MIGRATION.md §2.
+#
+#   2. `cmake` on PATH is the PyPI cmake package's console-script shim -- pulled
+#      in because lerobot core depends on `cmake`. It works fine in a normal
+#      shell, but pip's build isolation hides the env's site-packages from the
+#      build, so inside the isolated build the shim cannot import its own
+#      module and dies with:
+#           ModuleNotFoundError: No module named 'cmake'
+#      which surfaces as: CalledProcessError: ['cmake', '--version'] ... status 1
+#      --no-build-isolation lets the build see the env, so the shim resolves.
+#
+# Installed here, before the plugins, so that pip sees the requirement already
+# satisfied when lerobot_robot_ur7e pulls it in.
+if python -c "import rtde_control" 2>/dev/null; then
+  echo "== ur_rtde already installed"
+else
+  echo "== installing ur_rtde"
+  if ! python -c "import cmake" 2>/dev/null; then
+    echo "   WARNING: the 'cmake' python module is not importable in this env." >&2
+    echo "   The build will likely fail. Try: python -m pip install 'cmake>=3.29.0.1,<4.2.0'" >&2
+  fi
+  python -m pip install --no-build-isolation ur_rtde || {
+    cat >&2 <<'HINT'
+
+ur_rtde failed to build. In order of likelihood:
+
+  1. Boost is missing. On Debian/Ubuntu:
+       sudo apt install -y libboost-system-dev libboost-thread-dev \
+                           libboost-program-options-dev cmake build-essential
+  2. cmake is unusable from the build. Check BOTH of these:
+       cmake --version
+       python -c "import cmake; print(cmake.__file__)"
+     If the module import fails, reinstall inside lerobot's allowed range:
+       python -m pip install "cmake>=3.29.0.1,<4.2.0"
+     Do NOT `pip install --force-reinstall cmake` unqualified -- it pulls a
+     version above lerobot's `cmake<4.2.0` pin and leaves pip in conflict.
+  3. As a last resort, force the system cmake and skip the shim entirely:
+       CMAKE_EXECUTABLE=/usr/bin/cmake python -m pip install --no-build-isolation ur_rtde
+
+HINT
+    exit 1
+  }
+fi
+
 # Plugin packages. The lerobot_robot_ / lerobot_teleoperator_ name prefixes are
 # what makes register_third_party_plugins() discover them.
 #

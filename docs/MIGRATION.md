@@ -60,21 +60,79 @@ Nothing else in the repo mentions an IP, a serial path or a camera index.
 ## 2. ur_rtde: source build on aarch64
 
 There is no aarch64 wheel on PyPI (verified against the PyPI API: only i686,
-x86_64 and win). pip will therefore try to build from source, which needs Boost.
+x86_64 and win). pip therefore builds from source, which needs Boost -- and hits
+a second, much less obvious trap.
 
 ```bash
-# apt route
+# 1. Boost, FIRST. Without it the source build dies halfway.
 sudo apt install -y libboost-system-dev libboost-thread-dev \
                     libboost-program-options-dev cmake build-essential
-pip install ur_rtde
 
-# conda route (if you keep everything inside the env)
-conda install -c conda-forge libboost-devel cmake
-CMAKE_PREFIX_PATH="$CONDA_PREFIX" pip install --no-binary :all: ur_rtde
+# 2. Then ur_rtde, WITHOUT build isolation (see below).
+python -m pip install --no-build-isolation ur_rtde
 ```
 
 Verify with `python -c "import rtde_control; print(rtde_control.RTDEControlInterface.FLAG_USE_EXT_UR_CAP)"`.
 `scripts/verify_env.py` checks exactly this.
+
+### Why `--no-build-isolation`
+
+Hit on spark-3e31, 2026-08-18. lerobot core depends on the PyPI `cmake`
+package, which installs a console-script **shim** at `$CONDA_PREFIX/bin/cmake`
+whose real body is a Python module. That directory precedes `/usr/bin` on PATH,
+so it shadows the system cmake. In a normal shell the shim works. Inside pip's
+build isolation the env's site-packages are hidden from the build, the shim
+cannot import its own module, and the build dies:
+
+```text
+File ".../envs/ur7e/bin/cmake", line 3, in <module>
+    from cmake import cmake
+ModuleNotFoundError: No module named 'cmake'
+...
+subprocess.CalledProcessError: Command '['cmake', '--version']' returned non-zero exit status 1.
+ERROR: Failed building wheel for ur-rtde
+```
+
+Note the shape of this failure: **`cmake --version` succeeds when you type it by
+hand**, so the obvious check does not reproduce it. Only the isolated build sees
+the broken shim. `--no-build-isolation` lets the build see the env, so the shim
+resolves.
+
+### Do NOT `pip install --force-reinstall cmake`
+
+Unqualified, it pulls a version above lerobot's pin and leaves pip in permanent
+conflict:
+
+```text
+lerobot 0.6.0 requires cmake<4.2.0,>=3.29.0.1, but you have cmake 4.4.2 which is incompatible.
+```
+
+Harmless at runtime -- lerobot never imports cmake, the dependency exists for
+building opencv from source, which does not happen on aarch64 (wheel available).
+But a later `pip install` may silently pull it back into range at an
+inconvenient moment, and the env no longer matches `docs/freeze-x86.txt`.
+
+Stay inside the range instead:
+
+```bash
+python -m pip install "cmake>=3.29.0.1,<4.2.0"
+pip check   # silent == clean
+```
+
+### If it still fails
+
+```bash
+# force the system cmake and bypass the shim entirely
+CMAKE_EXECUTABLE=/usr/bin/cmake python -m pip install --no-build-isolation ur_rtde
+
+# or move the shim out of the way for the duration of the build
+mv "$CONDA_PREFIX/bin/cmake" "$CONDA_PREFIX/bin/cmake.bak"
+python -m pip install ur_rtde
+mv "$CONDA_PREFIX/bin/cmake.bak" "$CONDA_PREFIX/bin/cmake"
+```
+
+`scripts/setup_env.sh` installs ur_rtde this way before the plugins, and prints
+this triage if it still fails.
 
 ---
 
