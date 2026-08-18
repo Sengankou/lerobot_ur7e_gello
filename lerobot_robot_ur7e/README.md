@@ -1,4 +1,4 @@
-# LeRobot UR5e Robot
+# LeRobot UR7e Robot
 
 A [LeRobot](https://github.com/huggingface/lerobot) plugin for the Universal Robots UR5e.
 

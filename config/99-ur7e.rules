@@ -1,0 +1,35 @@
+# udev rules for the UR7e cell.  Install with:
+#
+#   sudo cp config/99-ur7e.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules && sudo udevadm trigger
+#
+# Why: /dev/ttyUSB0 and /dev/video0 are assigned in enumeration order and move
+# when devices are re-plugged or the machine reboots. Stable names mean
+# config/site.yaml never has to change because someone swapped a USB port.
+# Same convention as 99-so101.rules -- see the SO101 wiki page.
+#
+# The leading 99 in the filename is required (rules are applied in name order).
+
+# ---------------------------------------------------------------- GELLO / U2D2
+# The FTDI adapter has a unique serial, so match on it directly.
+# Find yours with:  udevadm info -a -n /dev/ttyUSB0 | grep -E 'idVendor|idProduct|serial'
+#
+# NOTE: /dev/serial/by-id/usb-FTDI_...-if00-port0 already exists and is stable
+# for this adapter, so this symlink is a convenience, not a requirement.
+# config/site.yaml currently uses the by-id path.
+SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6014", ATTRS{serial}=="FTAU58XG", SYMLINK+="ur7e_gello"
+
+# ---------------------------------------------------------------- USB cameras
+# UVC webcams of the same model share a serial number, so they cannot be told
+# apart by serial. Match on the physical USB port instead (KERNELS==), exactly
+# as 99-so101.rules does. Find the port with:
+#   udevadm info --name=/dev/video0 | grep -E 'ID_VENDOR_ID|ID_MODEL_ID|DEVPATH'
+#
+# <FILL IN> the ids and port paths for the cameras actually in the cell.
+#SUBSYSTEM=="video4linux", ATTRS{idVendor}=="<FILL IN>", ATTRS{idProduct}=="<FILL IN>", ATTR{index}=="0", KERNELS=="<FILL IN>", SYMLINK+="ur7e_wristcam"
+#SUBSYSTEM=="video4linux", ATTRS{idVendor}=="<FILL IN>", ATTRS{idProduct}=="<FILL IN>", ATTR{index}=="0", KERNELS=="<FILL IN>", SYMLINK+="ur7e_frontcam"
+
+# ---------------------------------------------------------------- RealSense
+# No udev rule needed. RealSense cameras are addressed by serial number in
+# config/site.yaml (`serial_number_or_name`), not by a /dev path.
+# List the serials with:  lerobot-find-cameras realsense

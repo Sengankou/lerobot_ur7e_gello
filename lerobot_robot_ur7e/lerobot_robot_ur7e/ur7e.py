@@ -27,7 +27,7 @@ from lerobot.cameras import make_cameras_from_configs
 from lerobot.robots import Robot
 from lerobot.utils.errors import DeviceNotConnectedError
 
-from .config_ur5e import UR5EConfig
+from .config_ur7e import UR7EConfig
 from .robotiq_gripper import RobotiqGripper
 
 logger = logging.getLogger(__name__)
@@ -44,11 +44,11 @@ JOINT_KEYS = [f"{name}.pos" for name in JOINT_NAMES]
 GRIPPER_KEY = "gripper.pos"
 
 
-class UR5E(Robot):
-    config_class = UR5EConfig
-    name = "ur5e"
+class UR7E(Robot):
+    config_class = UR7EConfig
+    name = "ur7e"
 
-    def __init__(self, config: UR5EConfig):
+    def __init__(self, config: UR7EConfig):
         super().__init__(config)
         self.config = config
 

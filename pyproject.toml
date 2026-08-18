@@ -1,5 +1,5 @@
 [project]
-name = "lerobot-ur5e-gello-dev-env"
+name = "lerobot-ur7e-gello-dev-env"
 version = "0.1.0"
 readme = "README.md"
 license = "Apache-2.0"
@@ -9,7 +9,7 @@ dependencies = [
     "ipykernel>=7.1.0",
     "lerobot>=0.4.0",
     "lerobot-camera-zmq",
-    "lerobot-robot-ur5e",
+    "lerobot-robot-ur7e",
     "lerobot-teleoperator-gello",
     "matplotlib>=3.10.8",
     "msgpack>=1.0.5",
@@ -20,7 +20,7 @@ dependencies = [
 [tool.setuptools.packages.find]
 include = [
     "lerobot_camera_zmq",
-    "lerobot_robot_ur5e",
+    "lerobot_robot_ur7e",
     "lerobot_teleoperator_gello",
     "openpi_client",
 ]
@@ -35,5 +35,5 @@ dev = [
 [tool.uv.sources]
 lerobot =  { git = "https://github.com/F-Fer/lerobot_fix_batch_encoding", rev = "fix/video-batch-encoding" }
 lerobot-camera-zmq = { path = "lerobot_camera_zmq", editable = true }
-lerobot-robot-ur5e = { path = "lerobot_robot_ur5e", editable = true }
+lerobot-robot-ur7e = { path = "lerobot_robot_ur7e", editable = true }
 lerobot-teleoperator-gello = { path = "lerobot_teleoperator_gello", editable = true }

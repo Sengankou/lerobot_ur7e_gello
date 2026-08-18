@@ -85,7 +85,7 @@ def main() -> int:
     line("teleoperators", teleops)
     line("cameras", cameras)
     for name, pool, what in [
-        ("ur5e", robots, "robot"),
+        ("ur7e", robots, "robot"),
         ("gello", teleops, "teleoperator"),
         ("keyboard_joint", teleops, "teleoperator"),
     ]:

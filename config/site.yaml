@@ -3,7 +3,7 @@
 # ============================================================================
 #
 #  Read by the `ur7e_site` package; every plugin config below pulls its
-#  defaults from here, so `lerobot-teleoperate --robot.type=ur5e` needs no IP
+#  defaults from here, so `lerobot-teleoperate --robot.type=ur7e` needs no IP
 #  on the command line. CLI flags still override these values.
 #
 #  ACTIVE PROFILE: ursim  (URSim PolyScope X 10.12.1 on this x86_64 box)

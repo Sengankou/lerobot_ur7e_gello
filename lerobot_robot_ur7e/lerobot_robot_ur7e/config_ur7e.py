@@ -1,8 +1,10 @@
-"""Configuration dataclass for the UR5e/UR7e robot plugin.
+"""Configuration dataclass for the UR7e robot plugin.
 
-UR7e is a mechanical rebrand of the UR5e, so one plugin covers both; the
-``ur5e`` registration name is kept for continuity with the upstream project and
-with datasets already recorded against it.
+UR7e is a mechanical rebrand of the UR5e, so one plugin covers both arms. The
+registration name is ``ur7e``: upstream called it ``ur5e``, but the robot in
+this cell is a UR7e and the name ends up in dataset metadata
+(``info.json``'s ``robot_type``), so it should say what we actually drove.
+Renamed 2026-08-18, while the only recorded data was throwaway URSim data.
 
 Every default is read from ``config/site.yaml`` through :mod:`ur7e_site`, so the
 sim -> real switch is a single-file edit and no IP or device path is baked into
@@ -93,9 +95,9 @@ class ServoJConfig:
     gain: int = field(default_factory=lambda: int(site_get("robot.servoj.gain", 300)))
 
 
-@RobotConfig.register_subclass("ur5e")
+@RobotConfig.register_subclass("ur7e")
 @dataclass
-class UR5EConfig(RobotConfig):
+class UR7EConfig(RobotConfig):
     #: Controller address. URSim on the ursim_net bridge by default.
     ip: str = field(default_factory=lambda: site_get("robot.ip", "192.168.56.101"))
 

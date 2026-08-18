@@ -30,7 +30,7 @@ from lerobot.utils.import_utils import register_third_party_plugins
 register_third_party_plugins()
 
 from lerobot.teleoperators import TeleoperatorConfig, make_teleoperator_from_config  # noqa: E402
-from lerobot_robot_ur5e import UR5E, UR5EConfig  # noqa: E402
+from lerobot_robot_ur7e import UR7E, UR7EConfig  # noqa: E402
 
 
 def pct(values: list[float], p: float) -> float:
@@ -53,8 +53,8 @@ def main() -> int:
     ap.add_argument("--no-cameras", action="store_true", help="isolate the control path")
     args = ap.parse_args()
 
-    robot_cfg = UR5EConfig(cameras={}) if args.no_cameras else UR5EConfig()
-    robot = UR5E(robot_cfg)
+    robot_cfg = UR7EConfig(cameras={}) if args.no_cameras else UR7EConfig()
+    robot = UR7E(robot_cfg)
 
     teleop_cfg = TeleoperatorConfig.get_choice_class(args.teleop)()
     teleop = make_teleoperator_from_config(teleop_cfg)

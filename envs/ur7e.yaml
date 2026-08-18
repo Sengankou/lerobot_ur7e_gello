@@ -1,31 +1,67 @@
 # conda environment for the UR7e x LeRobot x GELLO stack.
 #
-#   conda env create -f envs/ur7e.yaml
+#   conda env create -f envs/ur7e.yaml          # first time
+#   conda env update -f envs/ur7e.yaml --prune  # after editing this file
 #
-# This file intentionally contains ONLY machine-independent dependencies.
-# The editable installs (lerobot core + the three plugin packages) are done by
-# scripts/setup_env.sh, because their paths differ per machine and hard-coding
-# an absolute path here would break the DGX Spark migration.
+# ===========================================================================
+#  THIS FILE IS THE PLACE TO ADD A DEPENDENCY.
+#  Add the package below, re-run the update command, commit the change. Same
+#  workflow as envs/so101.yaml and envs/smolvla.yaml on the Spark. Do not
+#  `pip install` into the env ad hoc -- it is lost on the next rebuild and the
+#  next person cannot reproduce your environment.
+# ===========================================================================
 #
-# Pin rationale (x86_64 / RTX 5080, sm_120):
+# Difference from envs/so101.yaml, on purpose: that file carries the editable
+# install line (`-e /home/robots/lerobot[...]`) inside the yaml. This one does
+# not, because this repo is also developed on a non-Spark box where the user is
+# not `robots`, and a hard-coded /home/robots path silently builds the env
+# against a tree that is not there. `scripts/setup_env.sh` performs the five
+# editable installs with paths computed from the checkout location:
+#
+#   <ur7e root>/lerobot                              lerobot core, pinned v0.6.0
+#   <ur7e root>/lerobot_ur7e_gello/ur7e_site         site config loader
+#   <ur7e root>/lerobot_ur7e_gello/lerobot_robot_ur7e
+#   <ur7e root>/lerobot_ur7e_gello/lerobot_teleoperator_gello
+#   <ur7e root>/lerobot_ur7e_gello/lerobot_teleoperator_keyboard_joint
+#
+# The lerobot core clone is deliberately NOT the shared ~/lerobot that the
+# SO-101 / OpenArm / smolvla / pi environments install from: this stack pins
+# v0.6.0 and would drag that shared clone off whatever ref those envs expect.
+#
+# --------------------------------------------------------------------------
+# Pin rationale:
 #   python 3.12   : lerobot v0.6.0 requires-python >= 3.12
-#   ffmpeg 7.1.1  : 8.x is not supported by the torchcodec build we use (internal finding)
-#   torch 2.10.0  : lerobot v0.6.0 allows >=2.7,<2.12; 2.10.0+cu130 wheel exists for cp312
-#   cu130         : ships sm_120 kernels natively -> no PTX JIT on RTX 5080
-#   torchvision   : 0.25.0 is the matching release for torch 2.10
-#   torchcodec    : left unpinned; lerobot[dataset] caps it <0.12 -> resolves to 0.9.1,
-#                   which is the build paired with torch 2.10
+#   ffmpeg 7.1.1  : 8.x is not supported by the torchcodec build we use
+#   torch 2.10.0  : lerobot v0.6.0 allows >=2.7,<2.12
+#   cu130         : sm_120 (RTX 5080) and sm_121 (GB10) kernels
+#   torchcodec    : 0.10.0 is the build paired with torch 2.10. Leaving it to
+#                   the resolver picks 0.11.x, which needs torch >= 2.11 and
+#                   dies at import with "undefined symbol: torch_dtype_...".
+#                   AARCH64: torchcodec has no aarch64 wheel before 0.11.0,
+#                   which needs torch >= 2.11. On the Spark either move torch
+#                   to 2.11 + torchcodec 0.11 together, or delete this pin and
+#                   accept the slower PyAV decoder (`av` is already installed).
+#   rerun-sdk     : what lerobot[viz] pulls in; listed directly so it can be
+#                   added/removed here without touching the extras string.
 #
-# aarch64 (DGX Spark) differences are documented in docs/MIGRATION.md.
+# NOT here on purpose:
+#   pyrealsense2  : `conda install pyrealsense2` instead -- the version
+#                   lerobot[intelrealsense] pins has no aarch64 wheel.
+#                   See the "Intel Realsense セットアップ手順" wiki page.
+#   ur_rtde       : pulled in as a dependency of lerobot_robot_ur7e. On aarch64
+#                   there is no wheel, so Boost must be installed FIRST or the
+#                   source build fails halfway. See docs/MIGRATION.md §2.
 name: ur7e
 channels:
   - conda-forge
 dependencies:
   - python=3.12
-  - ffmpeg=7.1.1
+  - ffmpeg=7.1.1        # 8.x is NOT yet supported
   - ipython
   - pip
   - pip:
       - --extra-index-url https://download.pytorch.org/whl/cu130
       - torch==2.10.0+cu130
       - torchvision==0.25.0+cu130
+      - torchcodec==0.10.0
+      - rerun-sdk>=0.24.0,<0.34.0

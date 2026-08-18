@@ -43,21 +43,41 @@ robot:
     lookahead_time_s: 0.2
     gain: 300
 
+  # Cameras. Two addressing schemes, pick per camera:
+  #
+  #   intelrealsense -> by SERIAL NUMBER. No udev rule needed.
+  #                     List serials with: lerobot-find-cameras realsense
+  #                     Install with apt librealsense2 + `conda install
+  #                     pyrealsense2` -- lerobot[intelrealsense] pins a version
+  #                     with no aarch64 wheel. See the Intel Realsense wiki page.
+  #
+  #   opencv         -> by /dev PATH. Use a udev symlink, never /dev/videoN:
+  #                     the number moves when devices are re-plugged.
+  #                     Template: config/99-ur7e.rules
+  #                     List cameras with: lerobot-find-cameras opencv
+  #
+  # Two UVC traps worth knowing (both hit us):
+  #   * `exposure_dynamic_framerate` silently halves the frame rate in a dim
+  #     room, which quietly breaks 30 fps recording. Fix with
+  #     `v4l2-ctl -d <dev> --set-ctrl=auto_exposure=1
+  #      --set-ctrl=exposure_dynamic_framerate=0`. Not persistent across reboot.
+  #   * raw YUYV over USB 2.0 can tear; set `fourcc: MJPG` if frames flicker.
   cameras:
-    # RealSense on the real cell. On aarch64, pyrealsense2 is NOT pip
-    # installable -- see docs/MIGRATION.md.
-    # front:
-    #   type: intelrealsense
-    #   serial_number_or_name: <FILL IN>
-    #   width: 640
-    #   height: 480
-    #   fps: 30
-    wrist:
-      type: opencv
-      index_or_path: /dev/video0
+    front:
+      type: intelrealsense
+      serial_number_or_name: <FILL IN>   # e.g. 427622273645
       width: 640
       height: 480
       fps: 30
+      color_mode: rgb
+      use_depth: false
+    wrist:
+      type: opencv
+      index_or_path: /dev/ur7e_wristcam  # udev symlink, see config/99-ur7e.rules
+      width: 640
+      height: 480
+      fps: 30
+      # fourcc: MJPG
 
 teleop:
   gello:

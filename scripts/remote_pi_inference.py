@@ -20,7 +20,7 @@ from lerobot.utils.robot_utils import busy_wait
 from openpi_client.websocket_client_policy import WebsocketClientPolicy
 # Ensure third-party devices are discoverable by lerobot
 from lerobot_camera_zmq import ZMQCameraConfig  # noqa: F401
-from lerobot_robot_ur5e import UR5EConfig  # noqa: F401
+from lerobot_robot_ur7e import UR7EConfig  # noqa: F401
 from lerobot_teleoperator_gello import GelloConfig  # noqa: F401
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class InferenceConfig:
     ip: str
     port: int
     prompt: str
-    robot: RobotConfig = field(default_factory=lambda: UR5EConfig(ip="192.168.1.10"))
+    robot: RobotConfig = field(default_factory=lambda: UR7EConfig(ip="192.168.1.10"))
     fps: int = 60
 
 def init_keyboard_listener():

@@ -20,7 +20,7 @@ from lerobot.utils.import_utils import register_third_party_devices
 from lerobot.utils.utils import init_logging
 
 from lerobot_teleoperator_gello import GelloConfig
-from lerobot_robot_ur5e import UR5EConfig
+from lerobot_robot_ur7e import UR7EConfig
 
 
 def main() -> None:
@@ -29,7 +29,7 @@ def main() -> None:
 
     register_third_party_devices()
 
-    robot_cfg = UR5EConfig(ip="192.168.1.10")
+    robot_cfg = UR7EConfig(ip="192.168.1.10")
     teleop_cfg = GelloConfig(port="/dev/ttyUSB0", id="gello_teleop")
 
     teleop = make_teleoperator_from_config(teleop_cfg)

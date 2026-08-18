@@ -45,7 +45,7 @@ from .config_keyboard_joint import KeyboardJointConfig
 logger = logging.getLogger(__name__)
 
 # ".pos" suffix follows the LeRobot >= 0.6 convention -- see the note in
-# lerobot_robot_ur5e.ur5e. Must match the robot's action_features exactly.
+# lerobot_robot_ur7e.ur7e. Must match the robot's action_features exactly.
 JOINT_KEYS = [f"joint_{i}.pos" for i in range(6)]
 GRIPPER_KEY = "gripper.pos"
 

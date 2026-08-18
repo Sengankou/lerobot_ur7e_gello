@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """Report (and optionally watch) the controller's runtime state over RTDE receive.
 
-    python scripts/ursim_state.py            # one-shot
-    python scripts/ursim_state.py --watch 10 # poll for 10 seconds
+    python scripts/robot_state.py            # one-shot
+    python scripts/robot_state.py --watch 10 # poll for 10 seconds
 
 Receive-only, so it never takes control and works whether or not a program is
 playing. Handy for answering "is the External Control program actually running

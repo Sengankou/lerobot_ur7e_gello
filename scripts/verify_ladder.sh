@@ -31,6 +31,24 @@ has() { printf '%s\n' "${rungs[@]}" | grep -qx "$1"; }
 green() { echo "== RUNG $1: GREEN -- $2"; }
 red()   { echo "== RUNG $1: RED   -- $2"; exit 1; }
 
+# Retire a path without ever calling rm. Uses `trash` when it is installed
+# (it is on the RTX 5080 box, it is not on the Sparks), otherwise renames the
+# directory out of the way with a timestamp. Either way the old data is still
+# on disk if it turns out we wanted it.
+retire() {
+  local path="$1"
+  [ -e "$path" ] || return 0
+  if command -v trash >/dev/null 2>&1; then
+    trash put "$path"
+    echo "   retired -> trash: $path"
+  else
+    local dest="${path%/}.bak-$(date +%Y%m%d-%H%M%S)"
+    mv "$path" "$dest"
+    echo "   retired -> $dest"
+    echo "   (delete old .bak-* dirs yourself when you are sure)"
+  fi
+}
+
 echo "repo      : $REPO_DIR"
 echo "dataset   : $DS_ROOT"
 echo "rungs     : ${rungs[*]}"
@@ -45,7 +63,7 @@ fi
 # ------------------------------------------------------------ 1: connect
 if has 1; then
   echo; echo "#### RUNG 1 -- RTDE both directions ####"
-  python scripts/ursim_state.py || red 1 "cannot read robot state"
+  python scripts/robot_state.py || red 1 "cannot read robot state"
   python scripts/smoke_rtde.py --servo-hz 125 || red 1 "smoke test failed"
   green 1 "RTDE receive + External Control control, moveJ and servoJ at 125 Hz"
 fi
@@ -61,10 +79,9 @@ fi
 # -------------------------------------------------------------- 3: record
 if has 3; then
   echo; echo "#### RUNG 3 -- record ####"
-  # `trash put` rather than rm: recoverable if the wrong path is ever passed.
-  if [ -e "$DS_ROOT" ]; then trash put "$DS_ROOT" || red 3 "could not clear old dataset"; fi
+  retire "$DS_ROOT" || red 3 "could not clear old dataset"
   lerobot-record \
-    --robot.type=ur5e \
+    --robot.type=ur7e \
     --teleop.type=gello \
     --dataset.repo_id="$REPO_ID" \
     --dataset.single_task="move the ur7e arm through the gello sweep" \
@@ -84,7 +101,7 @@ if has 4; then
   echo; echo "#### RUNG 4 -- train ####"
   for policy in ${POLICIES:-act smolvla}; do
     out="$DATA_HOME/train/${policy}_ursim"
-    [ -e "$out" ] && { trash put "$out" || red 4 "could not clear $out"; }
+    retire "$out" || red 4 "could not clear $out"
     echo "-- training $policy"
     lerobot-train \
       --dataset.repo_id="$REPO_ID" --dataset.root="$DS_ROOT" \
@@ -105,15 +122,15 @@ if has 5; then
   echo; echo "#### RUNG 5 -- rollout ####"
   CKPT="$ACT_OUT/checkpoints/last/pretrained_model"
   [ -d "$CKPT" ] || red 5 "no ACT checkpoint at $CKPT (run rung 4 first)"
-  python scripts/ursim_state.py
+  python scripts/robot_state.py
   lerobot-rollout \
-    --robot.type=ur5e \
+    --robot.type=ur7e \
     --policy.path="$CKPT" --policy.device=cuda \
     --fps="$FPS" --duration="${ROLLOUT_S:-10}" \
     --task="move the ur7e arm through the gello sweep" \
     --play_sounds=false > /tmp/ur7e_rollout.log 2>&1 \
     || { tail -30 /tmp/ur7e_rollout.log; red 5 "rollout failed"; }
-  python scripts/ursim_state.py
+  python scripts/robot_state.py
   green 5 "policy checkpoint drives URSim through the standard rollout path"
 fi
 

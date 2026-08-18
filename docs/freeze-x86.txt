@@ -2,9 +2,9 @@
 # machine : x86_64 / Linux 7.0.0-28-generic
 # gpu     : NVIDIA GeForce RTX 5080, 580.173.02
 # python  : Python 3.12.13
-# lerobot : v0.6.0 @ 30da8e687a6dfc617fcd94afc367ac7071c376ce (editable from ~/lerobot)
+# lerobot : v0.6.0 @ 30da8e687a6dfc617fcd94afc367ac7071c376ce (editable)
 # ffmpeg  : ffmpeg version 7.1.1 Copyright (c) 2000-2025 the FFmpeg developers
-# date    : 2026-08-17T21:51:02+09:00
+# date    : 2026-08-18T10:14:37+09:00
 #
 # Regenerate with: pip freeze > docs/freeze-x86.txt
 # aarch64 deltas are in docs/MIGRATION.md -- do NOT pip install -r this file on the Spark.
@@ -61,9 +61,9 @@ Jinja2==3.1.6
 jsonlines==4.0.0
 kiwisolver==1.5.0
 -e git+https://github.com/huggingface/lerobot.git@30da8e687a6dfc617fcd94afc367ac7071c376ce#egg=lerobot
--e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@a73e286179fca34158eb0058ba6f21b3045a793a#egg=lerobot_robot_ur5e&subdirectory=lerobot_robot_ur5e
--e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@a73e286179fca34158eb0058ba6f21b3045a793a#egg=lerobot_teleoperator_gello&subdirectory=lerobot_teleoperator_gello
--e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@a73e286179fca34158eb0058ba6f21b3045a793a#egg=lerobot_teleoperator_keyboard_joint&subdirectory=lerobot_teleoperator_keyboard_joint
+-e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@d2e183e2135c727cf6c5c196bd2cc74b94915d71#egg=lerobot_robot_ur7e&subdirectory=lerobot_robot_ur7e
+-e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@d2e183e2135c727cf6c5c196bd2cc74b94915d71#egg=lerobot_teleoperator_gello&subdirectory=lerobot_teleoperator_gello
+-e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@d2e183e2135c727cf6c5c196bd2cc74b94915d71#egg=lerobot_teleoperator_keyboard_joint&subdirectory=lerobot_teleoperator_keyboard_joint
 markdown-it-py==4.2.0
 MarkupSafe==3.0.3
 matplotlib==3.11.1
@@ -121,6 +121,7 @@ PyYAML==6.0.3
 pyyaml-include==1.4.1
 regex==2026.7.19
 requests==2.34.2
+rerun-sdk==0.33.1
 rich==15.0.0
 safetensors==0.8.0
 sentry-sdk==2.68.0
@@ -145,7 +146,7 @@ typing-inspect==0.9.0
 typing-inspection==0.4.4
 typing_extensions @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_typing_extensions_1783002732/work
 tzdata==2026.3
--e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@a73e286179fca34158eb0058ba6f21b3045a793a#egg=ur7e_site&subdirectory=ur7e_site
+-e git+ssh://git@github.com/Sengankou/lerobot_ur7e_gello.git@d2e183e2135c727cf6c5c196bd2cc74b94915d71#egg=ur7e_site&subdirectory=ur7e_site
 ur_rtde==1.6.5
 urllib3==2.7.0
 wandb==0.27.2
