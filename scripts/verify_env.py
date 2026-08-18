@@ -23,7 +23,8 @@ def line(label: str, value: object) -> None:
 
 
 def main() -> int:
-    problems: list[str] = []
+    problems: list[str] = []   # exit 1
+    notes: list[str] = []      # worth knowing, not a failure
 
     print("\n== interpreter")
     line("python", sys.version.split()[0])
@@ -48,10 +49,21 @@ def main() -> int:
             line("compute capability", f"sm_{cap[0]}{cap[1]}")
             arch_list = torch.cuda.get_arch_list()
             line("built for", ", ".join(arch_list))
-            if f"sm_{cap[0]}{cap[1]}" not in arch_list:
-                problems.append(
-                    f"this torch build has no sm_{cap[0]}{cap[1]} kernels; it will PTX-JIT "
-                    "at first launch (slow, and known to hang on GB10)."
+            native = f"sm_{cap[0]}{cap[1]}"
+            if native not in arch_list:
+                # A NOTE, not a problem. PTX from compute_1xx forward-compiles
+                # to a newer minor in the same family, so this costs a one-off
+                # JIT delay at first kernel launch rather than breaking.
+                # Confirmed in practice: the so101 / openarm / smolvla
+                # environments run torch 2.10+cu130 on GB10 (sm_121) on the
+                # Sparks today. Escalate to the NGC PyTorch container only if
+                # you actually observe a hang.
+                ptx = [a for a in arch_list if a.startswith("compute_")]
+                notes.append(
+                    f"no native {native} kernels in this torch build "
+                    f"(has {', '.join(arch_list)}). Expect a one-off PTX-JIT "
+                    f"delay at first kernel launch"
+                    + (f", compiled from {ptx[-1]}." if ptx else ".")
                 )
         else:
             problems.append("CUDA is not available; training and rollout will fall back to CPU.")
@@ -109,6 +121,11 @@ def main() -> int:
         problems.append(f"ur7e_site import failed: {e}")
 
     print()
+    if notes:
+        print("== NOTES (not failures)")
+        for n in notes:
+            print(f"  -- {n}")
+        print()
     if problems:
         print("== PROBLEMS")
         for p in problems:

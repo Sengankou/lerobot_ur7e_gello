@@ -138,36 +138,72 @@ this triage if it still fails.
 
 ## 3. torch / torchcodec on aarch64
 
-**torch.** Use a cu130 aarch64 wheel. GB10 is `sm_121`; if the wheel does not
-ship `sm_121` kernels it will PTX-JIT at first launch, which is known to hang on
-complex graphs. `scripts/verify_env.py` prints `torch.cuda.get_arch_list()` and
-flags the mismatch -- do not ignore that warning. Fall back to the NGC PyTorch
-container if no wheel has native `sm_121`.
+**Settled 2026-08-18 on spark-3e31.** These two must move together, and the
+pair that works on aarch64 is *not* the pair that works on x86_64.
 
-**torchcodec is version-locked to torch, and the error message does not say so.**
-This bit us on x86 and will bite harder on aarch64:
+| | x86_64 (RTX 5080) | aarch64 (GB10) |
+| --- | --- | --- |
+| torch | `2.10.0+cu130` | `2.11.0+cu130` |
+| torchvision | `0.25.0+cu130` | `0.26.0+cu130` |
+| torchcodec | `0.10.0` | `0.11.1` |
 
-- torchcodec ships prebuilt `libtorchcodec_coreN.so` per FFmpeg major (N = 4..8)
-  and dlopens the first one that loads. A wrong *torch* version shows up as
-  `undefined symbol: torch_dtype_...`; a missing *ffmpeg* shows up as
-  `libavutil.so.NN: cannot open shared object file`. Both are reported as
-  "Could not load this library", stacked one per FFmpeg major, and the real
-  cause is only visible if you read every block.
-- Pairing used here: **torch 2.10 -> torchcodec 0.10.0**. (0.11 needs torch
-  >= 2.11, 0.12 needs 2.12.) If you move torch, move torchcodec with it.
-- aarch64 has no torchcodec wheel before 0.11.0, which needs torch >= 2.11. So
-  on the Spark either move the pin to torch 2.11 + torchcodec 0.11, or accept
-  the PyAV decoder fallback (`lerobot[av-dep]` is already installed).
-- The env's ffmpeg libraries live in `$CONDA_PREFIX/lib`, which is not on the
-  loader path. `scripts/setup_env.sh` installs a conda `activate.d` hook that
-  prepends it to `LD_LIBRARY_PATH`; without it torchcodec cannot find
-  `libavutil.so.*` no matter which version you install.
+The forcing constraint: **torchcodec has no aarch64 wheel before 0.11.0**
+(verified against the PyPI file list), and 0.11 requires torch >= 2.11. So the
+x86 pin cannot be reused. 2.11 is still inside lerobot 0.6.0's `torch<2.12.0`.
 
-**Symptom to recognise:** recording works fine (encoding goes through PyAV /
-the ffmpeg binary) and then *reading the dataset back* explodes. Encode and
-decode take different paths.
+`envs/ur7e.yaml` selects per architecture with pip environment markers, so one
+file serves both. Nothing to edit by hand.
 
----
+**The mismatch error does not mention versions.** A torchcodec built for a
+different torch fails at *import* with `undefined symbol: torch_dtype_...`,
+which reads like a corrupt install. If you see that, check the pairing first.
+
+### GB10 is sm_121 and torch may not ship kernels for it
+
+`torch 2.10+cu130` reports:
+
+```text
+UserWarning: Found GPU0 NVIDIA GB10 which is of cuda capability 12.1.
+Minimum and Maximum cuda capability supported by this version of PyTorch is (8.0) - (12.0)
+built for: sm_80, sm_90, sm_100, sm_110, sm_120, compute_120
+```
+
+**This is a note, not a blocker.** `compute_120` PTX forward-compiles to sm_121
+(same 12.x family), so the cost is a one-off JIT delay at first kernel launch,
+not a failure. Evidence that it works in practice: the **so101 / openarm /
+smolvla environments run this same torch 2.10+cu130 on GB10 on the Sparks
+today**, and their wiki pages record no such problem.
+
+`scripts/verify_env.py` reports it under NOTES rather than PROBLEMS for exactly
+this reason -- an earlier version failed the check here, which would have turned
+rung 0 of the ladder RED on every Spark.
+
+Check whether 2.11 ships sm_121 natively once installed:
+
+```bash
+python -c "import torch; print(torch.cuda.get_arch_list())"
+```
+
+Escalate to the NGC PyTorch container only if you actually observe a hang, not
+because of the warning alone.
+
+### RealSense
+
+`pyrealsense2` is pip-installable on x86_64 but **not** on aarch64 at the
+version `lerobot[intelrealsense]` pins. Use apt `librealsense2` +
+`conda install pyrealsense2`; see the Intel Realsense wiki page.
+
+### A `pip check` warning you can ignore
+
+```text
+nvidia-cusparselt-cu13 0.8.0 is not supported on this platform
+```
+
+Seen on spark-3e31. `nvidia-cusparselt-cu13` is a declared dependency of
+torch's cu130 build (the same package is installed and clean on x86_64), and
+cuSPARSELt is only used by `torch.sparse.to_sparse_semi_structured` -- the 2:4
+structured-sparsity path, which none of ACT / SmolVLA / the dataset pipeline
+touches. It is the only line `pip check` reports; torch and lerobot are clean.
 
 ## 4. Real controller: what URSim could not tell us
 

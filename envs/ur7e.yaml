@@ -32,17 +32,28 @@
 # Pin rationale:
 #   python 3.12   : lerobot v0.6.0 requires-python >= 3.12
 #   ffmpeg 7.1.1  : 8.x is not supported by the torchcodec build we use
-#   torch 2.10.0  : lerobot v0.6.0 allows >=2.7,<2.12
-#   cu130         : sm_120 (RTX 5080) and sm_121 (GB10) kernels
-#   torchcodec    : 0.10.0 is the build paired with torch 2.10. Leaving it to
-#                   the resolver picks 0.11.x, which needs torch >= 2.11 and
-#                   dies at import with "undefined symbol: torch_dtype_...".
-#                   AARCH64: torchcodec has no aarch64 wheel before 0.11.0,
-#                   which needs torch >= 2.11. On the Spark either move torch
-#                   to 2.11 + torchcodec 0.11 together, or delete this pin and
-#                   accept the slower PyAV decoder (`av` is already installed).
+#   torch         : lerobot v0.6.0 allows >=2.7,<2.12. Pinned PER ARCH, see below.
+#   cu130         : sm_120 kernels (RTX 5080). NOTE GB10 is sm_121 and torch
+#                   2.10 does not ship sm_121 -- it PTX-JITs from compute_120,
+#                   which costs a one-off delay at first kernel launch. The
+#                   so101 / openarm / smolvla environments run this same
+#                   combination on the Sparks today, so it works; 2.11 may ship
+#                   sm_121 natively, check `torch.cuda.get_arch_list()`.
+#   torchcodec    : must match torch, and the error when it does not is
+#                   "undefined symbol: torch_dtype_..." at import, NOT a
+#                   version complaint. Pairs: torch 2.10 <-> 0.10.x,
+#                   torch 2.11 <-> 0.11.x.
 #   rerun-sdk     : what lerobot[viz] pulls in; listed directly so it can be
 #                   added/removed here without touching the extras string.
+#
+# WHY THE PER-ARCH SPLIT
+#   torchcodec has NO aarch64 wheel before 0.11.0 (verified on PyPI), and
+#   0.11 requires torch >= 2.11. So x86_64 and aarch64 cannot share one pin:
+#     x86_64  : torch 2.10.0 + torchcodec 0.10.0  <- the combination the full
+#               verification ladder went green on
+#     aarch64 : torch 2.11.0 + torchcodec 0.11.1  <- the only pair that has
+#               wheels for both, and still inside lerobot's torch<2.12
+#   pip environment markers do the selection, so one file serves both.
 #
 # NOT here on purpose:
 #   pyrealsense2  : `conda install pyrealsense2` instead -- the version
@@ -61,7 +72,13 @@ dependencies:
   - pip
   - pip:
       - --extra-index-url https://download.pytorch.org/whl/cu130
-      - torch==2.10.0+cu130
-      - torchvision==0.25.0+cu130
-      - torchcodec==0.10.0
+      # x86_64 (RTX 5080 dev box)
+      - torch==2.10.0+cu130       ; platform_machine == "x86_64"
+      - torchvision==0.25.0+cu130 ; platform_machine == "x86_64"
+      - torchcodec==0.10.0        ; platform_machine == "x86_64"
+      # aarch64 (DGX Spark, GB10)
+      - torch==2.11.0+cu130       ; platform_machine == "aarch64"
+      - torchvision==0.26.0+cu130 ; platform_machine == "aarch64"
+      - torchcodec==0.11.1        ; platform_machine == "aarch64"
+      # arch-independent
       - rerun-sdk>=0.24.0,<0.34.0
