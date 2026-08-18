@@ -439,3 +439,23 @@ LeRobot セッション終了時の `stopScript()` でプログラムは停止�
 
 joint_5 が 5 と 3 で違う。どちらかが誤記。本リポジトリの `mock_bus.py` は登録値側（3）を採っている。
 lerobot 側は較正を取り直すので実害は無いが、**gello_software 側の登録値が誤っている可能性**があるため実機で要確認。
+
+---
+
+## 14. 実測記録（2026-08-18 / DGX Spark spark-3e31）
+
+**マイルストーン: GELLO 実機（3e31）→ lerobot → Wi-Fi 越しの URSim（Windows ラップトップ）でテレオペ追従が成立。**
+実機 UR7e を除く全経路が実測済みになった。
+
+- **Spark 環境構築 green**。踏んだ罠は §13 以降に追記済みの 2 件（ur_rtde の build isolation、torch/torchcodec の対）。
+  確定ピン: torch 2.11.0+cu130 / torchvision 0.26.0+cu130 / torchcodec 0.11.1（`envs/ur7e.yaml`）
+- **sm_121 は問題なし** ✅実測。torch 2.11 の arch list に sm_121 も PTX も無いが、行列積が初回から全速・正常値。
+  CUDA 13 の同一ファミリ互換（sm_120 の cubin が sm_121 で走る）。**HANDOFF §6 の「GB10 の PTX JIT ハング」は再現せず**。NGC コンテナ不要。
+- **GELLO 実機較正 green** ✅実測（`lerobot-calibrate`、修正 589f018 後）。
+  - offsets: joint_0..5 = [3066, 4098, 2036, 976, 969, 4093] counts（`calibration/gello.json`）
+  - **Wiki の不一致は決着**: gello_software 表記に換算すると joint_5 = 5。`PORT_CONFIG_MAP` の 3 は誤記（§13.3 参照）
+  - **要修正**: `gripper_travel_counts` の既定 575 は上流値。実測ストロークは約 476 counts。
+    このままだと全握りで正規化 0.84 止まり。site.yaml に 476 を設定して較正を取り直すこと
+- **Windows + Docker Desktop の URSim** ✅実測: `-p 80,30001-30004` で公開 + Firewall 許可で Spark から到達可。
+  コンテナ→Spark:50002 の逆方向は NAT でそのまま通る。ping は Windows 既定で落ちるが TCP は通る（ping で判断しない）。
+  手順の詳細は Notion「UR7eセットアップ」参照。
